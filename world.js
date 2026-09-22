@@ -1,131 +1,124 @@
-// GTA & Mafia Style 3D Open-World Town (Intersections, 3D Cars, Storefronts, Pennants)
+// Massive 200m x 200m Open-World Metropolis (8+ Blocks, Districts, Cars, Storefronts)
 
 class CyberBunkerWorld {
     constructor(scene) {
         this.scene = scene;
         this.terminals = [];
         this.animatedObjects = [];
-        this.policeLight = null;
+        this.policeLights = [];
         this.laserBarriers = [];
 
         this.initAtmosphere();
-        this.buildTownRoads();
-        this.buildSidewalksAndCurbs();
-        this.buildTownStorefronts();
-        this.buildParkedCars();
+        this.buildMassiveRoadNetwork();
+        this.buildCityBlocksAndSidewalks();
+        this.buildDistrictBuildings();
+        this.buildCityVehicles();
         this.buildOverheadPennants();
-        this.buildSidewalkTreesAndProps();
+        this.buildStreetTreesAndProps();
         this.buildStreetLamps();
         this.buildChallengeStations();
     }
 
     initAtmosphere() {
-        // Deep night sky atmosphere
-        this.scene.fog = new THREE.FogExp2(0x10141e, 0.016);
+        // Deep cinematic night sky fog
+        this.scene.fog = new THREE.FogExp2(0x10141e, 0.010);
 
-        // Ambient Fill
-        const ambientLight = new THREE.AmbientLight(0x222a3a, 1.3);
+        // Ambient Lighting
+        const ambientLight = new THREE.AmbientLight(0x242e40, 1.4);
         this.scene.add(ambientLight);
 
         // Moon Directional Light
-        const moonLight = new THREE.DirectionalLight(0x8fa8c6, 1.1);
-        moonLight.position.set(-25, 45, -30);
+        const moonLight = new THREE.DirectionalLight(0x94b0d0, 1.2);
+        moonLight.position.set(-60, 80, -60);
         moonLight.castShadow = true;
         moonLight.shadow.mapSize.width = 2048;
         moonLight.shadow.mapSize.height = 2048;
-        moonLight.shadow.camera.near = 0.5;
-        moonLight.shadow.camera.far = 120;
-        moonLight.shadow.camera.left = -45;
-        moonLight.shadow.camera.right = 45;
-        moonLight.shadow.camera.top = 45;
-        moonLight.shadow.camera.bottom = -45;
-        moonLight.shadow.bias = -0.0004;
+        moonLight.shadow.camera.near = 1;
+        moonLight.shadow.camera.far = 250;
+        moonLight.shadow.camera.left = -110;
+        moonLight.shadow.camera.right = 110;
+        moonLight.shadow.camera.top = 110;
+        moonLight.shadow.camera.bottom = -110;
+        moonLight.shadow.bias = -0.0005;
         this.scene.add(moonLight);
     }
 
-    buildTownRoads() {
-        // High-res asphalt texture with 4-way intersection markings
+    buildMassiveRoadNetwork() {
+        // High-resolution procedural asphalt road texture (200m x 200m)
         const canvas = document.createElement('canvas');
         canvas.width = 1024;
         canvas.height = 1024;
         const ctx = canvas.getContext('2d');
 
-        // Dark asphalt base
-        ctx.fillStyle = '#161920';
+        // Dark asphalt ground
+        ctx.fillStyle = '#161922';
         ctx.fillRect(0, 0, 1024, 1024);
 
-        // Grain & asphalt noise
-        for (let i = 0; i < 40000; i++) {
+        // Grain & road noise
+        for (let i = 0; i < 50000; i++) {
             const x = Math.random() * 1024;
             const y = Math.random() * 1024;
-            const b = 22 + Math.random() * 15;
+            const b = 20 + Math.random() * 16;
             ctx.fillStyle = `rgb(${b}, ${b+1}, ${b+3})`;
             ctx.fillRect(x, y, 2, 2);
         }
 
-        // Tarmac patch lines (like Image 5!)
-        ctx.strokeStyle = '#12141a';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(120, 200); ctx.lineTo(350, 210); ctx.lineTo(360, 280); ctx.lineTo(110, 270); ctx.closePath();
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(600, 700); ctx.lineTo(850, 720); ctx.lineTo(840, 800); ctx.lineTo(590, 780); ctx.closePath();
-        ctx.stroke();
+        // Multiple Interconnected Avenues & Streets
+        // Center Avenue (North-South): x ~ 512, width 100px
+        // Center Boulevard (East-West): y ~ 512, width 100px
+        // Secondary Street North: y ~ 200, width 80px
+        // Secondary Street South: y ~ 824, width 80px
+        // Secondary Avenue West: x ~ 200, width 80px
+        // Secondary Avenue East: x ~ 824, width 80px
 
-        // North-South Avenue Road Lines (between x: 412 and 612)
-        // Double Yellow Center Line
+        // Double Yellow Center Lines
         ctx.fillStyle = '#f5b700';
-        ctx.fillRect(507, 0, 4, 380);
-        ctx.fillRect(513, 0, 4, 380);
-        ctx.fillRect(507, 644, 4, 380);
-        ctx.fillRect(513, 644, 4, 380);
+        // Main N-S Avenue center line
+        ctx.fillRect(510, 0, 4, 1024);
+        // Main E-W Boulevard center line
+        ctx.fillRect(0, 510, 1024, 4);
 
-        // East-West Street Road Lines (between y: 412 and 612)
-        ctx.fillRect(0, 507, 380, 4);
-        ctx.fillRect(0, 513, 380, 4);
-        ctx.fillRect(644, 507, 380, 4);
-        ctx.fillRect(644, 513, 380, 4);
+        // Secondary yellow road lines
+        ctx.fillRect(200, 0, 3, 1024);
+        ctx.fillRect(824, 0, 3, 1024);
+        ctx.fillRect(0, 200, 1024, 3);
+        ctx.fillRect(0, 824, 1024, 3);
 
-        // Pedestrian Zebra Crossings (White stripes around the 4-way intersection)
+        // Pedestrian Zebra Crossings on Intersections
         ctx.fillStyle = 'rgba(215, 220, 230, 0.85)';
-        // North Crossing
-        for (let x = 425; x <= 595; x += 22) {
-            ctx.fillRect(x, 380, 14, 30);
-        }
-        // South Crossing
-        for (let x = 425; x <= 595; x += 22) {
-            ctx.fillRect(x, 614, 14, 30);
-        }
-        // West Crossing
-        for (let y = 425; y <= 595; y += 22) {
-            ctx.fillRect(380, y, 30, 14);
-        }
-        // East Crossing
-        for (let y = 425; y <= 595; y += 22) {
-            ctx.fillRect(614, y, 30, 14);
-        }
+        const intersections = [
+            { x: 512, y: 512 },
+            { x: 200, y: 200 },
+            { x: 824, y: 200 },
+            { x: 200, y: 824 },
+            { x: 824, y: 824 }
+        ];
 
-        // Stop Bars (Solid White lines before crossings)
-        ctx.fillRect(420, 370, 84, 6);
-        ctx.fillRect(520, 648, 84, 6);
-        ctx.fillRect(370, 520, 6, 84);
-        ctx.fillRect(648, 420, 6, 84);
+        intersections.forEach(pt => {
+            // N, S, E, W zebra stripes around intersection
+            for (let i = -35; i <= 35; i += 12) {
+                ctx.fillRect(pt.x + i, pt.y - 65, 8, 20);
+                ctx.fillRect(pt.x + i, pt.y + 45, 8, 20);
+                ctx.fillRect(pt.x - 65, pt.y + i, 20, 8);
+                ctx.fillRect(pt.x + 45, pt.y + i, 20, 8);
+            }
+        });
 
-        // Wet puddle areas reflecting light
+        // Wet puddles with specular highlights
         const puddles = [
-            { x: 460, y: 490, r: 65 },
-            { x: 570, y: 530, r: 80 },
-            { x: 480, y: 720, r: 90 },
-            { x: 300, y: 460, r: 70 },
-            { x: 750, y: 550, r: 75 }
+            { x: 480, y: 530, r: 70 },
+            { x: 540, y: 490, r: 85 },
+            { x: 220, y: 230, r: 60 },
+            { x: 810, y: 810, r: 75 },
+            { x: 350, y: 512, r: 80 },
+            { x: 700, y: 512, r: 90 }
         ];
 
         puddles.forEach(p => {
-            const rad = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, p.r);
-            rad.addColorStop(0, 'rgba(8, 10, 15, 0.92)');
-            rad.addColorStop(0.7, 'rgba(12, 16, 24, 0.7)');
-            rad.addColorStop(1, 'rgba(22, 25, 32, 0)');
+            const rad = ctx.createRadialGradient(p.x, p.y, 10, p.x, p.y, p.r);
+            rad.addColorStop(0, 'rgba(8, 10, 16, 0.95)');
+            rad.addColorStop(0.7, 'rgba(14, 18, 26, 0.75)');
+            rad.addColorStop(1, 'rgba(22, 25, 34, 0)');
             ctx.fillStyle = rad;
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -139,184 +132,184 @@ class CyberBunkerWorld {
             metalness: 0.35
         });
 
-        const roadGeo = new THREE.PlaneGeometry(80, 80);
+        const roadGeo = new THREE.PlaneGeometry(200, 200);
         const road = new THREE.Mesh(roadGeo, roadMat);
         road.rotation.x = -Math.PI / 2;
         road.receiveShadow = true;
         this.scene.add(road);
     }
 
-    buildSidewalksAndCurbs() {
+    buildCityBlocksAndSidewalks() {
         const sidewalkMat = new THREE.MeshStandardMaterial({
             color: 0x484f5c,
             roughness: 0.8,
             metalness: 0.1
         });
 
-        // Yellow painted curb edge (matching Image 1 & 4!)
         const yellowCurbMat = new THREE.MeshStandardMaterial({
             color: 0xf5b700,
             roughness: 0.6
         });
 
-        // 4 Corner Sidewalk Blocks: NW, NE, SW, SE
-        const corners = [
-            { x: -25, z: -25 }, // NW
-            { x: 25, z: -25 },  // NE
-            { x: -25, z: 25 },  // SW
-            { x: 25, z: 25 }   // SE
+        // 8 Major City Blocks across the 200m map
+        const blocks = [
+            // Inner Core 4 Blocks
+            { x: -35, z: -35, w: 45, d: 45 }, // NW Inner
+            { x: 35, z: -35, w: 45, d: 45 },  // NE Inner
+            { x: -35, z: 35, w: 45, d: 45 },  // SW Inner
+            { x: 35, z: 35, w: 45, d: 45 },   // SE Inner
+            // Outer Ring 4 Blocks
+            { x: -75, z: -75, w: 30, d: 30 },
+            { x: 75, z: -75, w: 30, d: 30 },
+            { x: -75, z: 75, w: 30, d: 30 },
+            { x: 75, z: 75, w: 30, d: 30 }
         ];
 
-        corners.forEach(c => {
-            // Main Sidewalk Slab
-            const slabGeo = new THREE.BoxGeometry(29, 0.25, 29);
-            const slab = new THREE.Mesh(slabGeo, sidewalkMat);
-            slab.position.set(c.x, 0.125, c.z);
+        blocks.forEach(b => {
+            // Raised Sidewalk Slab
+            const slab = new THREE.Mesh(new THREE.BoxGeometry(b.w, 0.25, b.d), sidewalkMat);
+            slab.position.set(b.x, 0.125, b.z);
             slab.receiveShadow = true;
             this.scene.add(slab);
 
-            // Yellow Curbs lining the street facing edges
-            const curbXGeo = new THREE.BoxGeometry(29.2, 0.28, 0.4);
-            const curbZGeo = new THREE.BoxGeometry(0.4, 0.28, 29.2);
+            // Yellow Curbs
+            const curbX = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.2, 0.28, 0.4), yellowCurbMat);
+            curbX.position.set(b.x, 0.14, b.z < 0 ? b.z + b.d/2 : b.z - b.d/2);
+            this.scene.add(curbX);
 
-            const curbZPos = c.z < 0 ? c.z + 14.6 : c.z - 14.6;
-            const curbXPos = c.x < 0 ? c.x + 14.6 : c.x - 14.6;
-
-            const curb1 = new THREE.Mesh(curbXGeo, yellowCurbMat);
-            curb1.position.set(c.x, 0.14, curbZPos);
-            this.scene.add(curb1);
-
-            const curb2 = new THREE.Mesh(curbZGeo, yellowCurbMat);
-            curb2.position.set(curbXPos, 0.14, c.z);
-            this.scene.add(curb2);
+            const curbZ = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.28, b.d + 0.2), yellowCurbMat);
+            curbZ.position.set(b.x < 0 ? b.x + b.w/2 : b.x - b.w/2, 0.14, b.z);
+            this.scene.add(curbZ);
         });
     }
 
-    buildTownStorefronts() {
-        // Red Brick Canvas Texture
-        const brickCanvas = document.createElement('canvas');
-        brickCanvas.width = 512;
-        brickCanvas.height = 512;
-        const bCtx = brickCanvas.getContext('2d');
-        bCtx.fillStyle = '#5c2d22';
-        bCtx.fillRect(0, 0, 512, 512);
-        bCtx.strokeStyle = '#381812';
-        bCtx.lineWidth = 2;
-        for (let y = 0; y < 512; y += 18) {
-            const off = (y / 18) % 2 === 0 ? 0 : 18;
-            for (let x = -36; x < 512; x += 36) {
-                bCtx.strokeRect(x + off, y, 36, 18);
+    buildDistrictBuildings() {
+        // Textures & Materials
+        const brickMat = new THREE.MeshStandardMaterial({ color: 0x58291e, roughness: 0.85 });
+        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x383e4a, roughness: 0.7 });
+        const corporateGlass = new THREE.MeshStandardMaterial({ color: 0x142032, roughness: 0.1, metalness: 0.9 });
+        const warmLitWindow = new THREE.MeshStandardMaterial({ color: 0xffaa40, emissive: 0xffaa40, emissiveIntensity: 0.75 });
+
+        // 1. NE DISTRICT: E-CORP FINANCIAL SKYSCRAPERS
+        const eCorpTower = new THREE.Mesh(new THREE.BoxGeometry(32, 48, 32), corporateGlass);
+        eCorpTower.position.set(40, 24, -40);
+        eCorpTower.castShadow = true;
+        eCorpTower.receiveShadow = true;
+        this.scene.add(eCorpTower);
+
+        // E-Corp Lit Windows
+        for (let floor = 2; floor < 12; floor++) {
+            for (let x = -12; x <= 12; x += 4) {
+                const win = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 0.1), (floor + x) % 3 === 0 ? warmLitWindow : corporateGlass);
+                win.position.set(40 + x, floor * 3.8, -23.9);
+                this.scene.add(win);
             }
         }
-        const brickTex = new THREE.CanvasTexture(brickCanvas);
-        brickTex.wrapS = THREE.RepeatWrapping;
-        brickTex.wrapT = THREE.RepeatWrapping;
-        brickTex.repeat.set(3, 4);
 
-        const brickMat = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.85 });
-        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x3d434f, roughness: 0.7 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0x141e2b, roughness: 0.1, metalness: 0.9 });
-        const warmLitMat = new THREE.MeshStandardMaterial({ color: 0xffb74d, emissive: 0xffb74d, emissiveIntensity: 0.7 });
-
-        // 1. NORTH-WEST BLOCK: RON'S COFFEE & GLOBE LOAN (Images 1 & 4)
-        const nwBuilding = new THREE.Mesh(new THREE.BoxGeometry(22, 18, 22), brickMat);
-        nwBuilding.position.set(-25, 9, -25);
-        nwBuilding.castShadow = true;
-        nwBuilding.receiveShadow = true;
-        this.scene.add(nwBuilding);
-
-        // Ron's Coffee Shop Awning (Striped Green/White fabric)
-        this.buildStoreAwning({ x: -14, y: 3.2, z: -14.2, width: 8, color1: 0x1e5631, color2: 0xffffff });
-
-        // Ron's Coffee Backlit Sign
         this.buildStoreSign({
-            text: "RON'S COFFEE // 24H",
-            subtext: "FREE GUEST WI-FI",
-            pos: { x: -14, y: 4.8, z: -13.9 },
+            text: "E CORP FINANCIAL TOWER",
+            subtext: "GLOBAL ASSET MANAGEMENT",
+            pos: { x: 26, y: 6.5, z: -23.8 },
             rotY: 0,
-            bgColor: "#143820",
-            textColor: "#55ff88"
+            bgColor: "#091222",
+            textColor: "#00f0ff"
         });
 
-        // Globe Loan & Jewelry Sign (Image 4!)
+        // 2. NW DISTRICT: TECH DATACENTER & TELECOM
+        const techBuilding = new THREE.Mesh(new THREE.BoxGeometry(30, 26, 30), concreteMat);
+        techBuilding.position.set(-40, 13, -40);
+        techBuilding.castShadow = true;
+        techBuilding.receiveShadow = true;
+        this.scene.add(techBuilding);
+
+        this.buildStoreSign({
+            text: "ALLSAFE CYBER SECURITY",
+            subtext: "DATA INFRASTRUCTURE & RECON",
+            pos: { x: -26, y: 5.5, z: -24.8 },
+            rotY: 0,
+            bgColor: "#101e30",
+            textColor: "#00ff66"
+        });
+
+        // 3. SW DISTRICT: CHINATOWN & DUMPLING TOWN (User's Photo 4!)
+        const chinatownBuilding = new THREE.Mesh(new THREE.BoxGeometry(32, 22, 32), brickMat);
+        chinatownBuilding.position.set(-40, 11, 40);
+        chinatownBuilding.castShadow = true;
+        chinatownBuilding.receiveShadow = true;
+        this.scene.add(chinatownBuilding);
+
+        // Bo Hai Dumpling Town Sign (Photo 4!)
+        this.buildStoreSign({
+            text: "BO HAI DUMPLING TOWN",
+            subtext: "CHINATOWN SPECIALTIES • NOODLES",
+            pos: { x: -26, y: 5.2, z: 23.8 },
+            rotY: Math.PI,
+            bgColor: "#851212",
+            textColor: "#ffdd44"
+        });
+
+        // Globe Loan & Jewelry Sign (Photo 4!)
         this.buildStoreSign({
             text: "GLOBE LOAN & JEWELRY",
             subtext: "PAWN • BUY • SELL",
-            pos: { x: -13.9, y: 4.8, z: -20 },
+            pos: { x: -23.8, y: 5.2, z: 34 },
             rotY: Math.PI / 2,
             bgColor: "#081b33",
             textColor: "#00d4ff"
         });
 
-        // 2. SOUTH-WEST BLOCK: A-SIDE MUSIC STORE & PATTY'S PUB (Image 1!)
-        const swBuilding = new THREE.Mesh(new THREE.BoxGeometry(22, 16, 22), brickMat);
-        swBuilding.position.set(-25, 8, 25);
-        swBuilding.castShadow = true;
-        swBuilding.receiveShadow = true;
-        this.scene.add(swBuilding);
+        // Fire Escapes along Chinatown building
+        for (let f = 1; f <= 3; f++) {
+            const escape = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 4.5), new THREE.MeshStandardMaterial({ color: 0x1f232b, metalness: 0.8 }));
+            escape.position.set(-23.2, f * 4.5, 40);
+            this.scene.add(escape);
+        }
 
-        // A-Side Music Store Illuminated Box Sign (Image 1!)
+        // 4. SE DISTRICT: DOWNTOWN & ENTERTAINMENT (Photo 1 & Mr. Robot Cafe)
+        const downtownBuilding = new THREE.Mesh(new THREE.BoxGeometry(32, 24, 32), brickMat);
+        downtownBuilding.position.set(40, 12, 40);
+        downtownBuilding.castShadow = true;
+        downtownBuilding.receiveShadow = true;
+        this.scene.add(downtownBuilding);
+
+        // Ron's Coffee Awning & Sign
+        this.buildStoreAwning({ x: 26, y: 3.2, z: 23.8, width: 8, color: 0x1e5631 });
+        this.buildStoreSign({
+            text: "RON'S COFFEE // 24H",
+            subtext: "FREE GUEST WI-FI",
+            pos: { x: 26, y: 5.2, z: 23.8 },
+            rotY: Math.PI,
+            bgColor: "#143820",
+            textColor: "#55ff88"
+        });
+
+        // A-Side Music Store Sign (Photo 1!)
         this.buildStoreSign({
             text: "A-SIDE MUSIC STORE",
             subtext: "VINYL • GUITARS • AUDIO",
-            pos: { x: -14, y: 4.6, z: 14.2 },
-            rotY: Math.PI,
+            pos: { x: 23.8, y: 5.2, z: 32 },
+            rotY: -Math.PI / 2,
             bgColor: "#801818",
             textColor: "#ffaa00"
         });
 
-        // Patty's Pub Awning (Red Canvas)
-        this.buildStoreAwning({ x: -20, y: 3.2, z: 14.2, width: 6, color1: 0x8b0000, color2: 0x111111 });
-
-        // 3. NORTH-EAST BLOCK: E-CORP BANK & FINANCIAL TOWER (Skyscrapers!)
-        const neBuilding = new THREE.Mesh(new THREE.BoxGeometry(22, 28, 22), concreteMat);
-        neBuilding.position.set(25, 14, -25);
-        neBuilding.castShadow = true;
-        neBuilding.receiveShadow = true;
-        this.scene.add(neBuilding);
-
-        // E-Corp Bank Main Sign
+        // Patty's Pub Awning & Sign (Photo 1!)
+        this.buildStoreAwning({ x: 38, y: 3.2, z: 23.8, width: 7, color: 0x8b0000 });
         this.buildStoreSign({
-            text: "E CORP BANK",
-            subtext: "GLOBAL FINANCIAL VAULT",
-            pos: { x: 14, y: 5.2, z: -13.9 },
-            rotY: 0,
-            bgColor: "#0a1120",
-            textColor: "#00f0ff"
-        });
-
-        // Add lit office windows to E-Corp tower
-        for (let floor = 2; floor < 7; floor++) {
-            for (let w = -7; w <= 7; w += 3.5) {
-                const win = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.2, 0.1), (w + floor) % 2 === 0 ? warmLitMat : glassMat);
-                win.position.set(25 + w, floor * 3.8, -13.9);
-                this.scene.add(win);
-            }
-        }
-
-        // 4. SOUTH-EAST BLOCK: CREOLE KING & ALLSAFE SECURITY (Image 2!)
-        const seBuilding = new THREE.Mesh(new THREE.BoxGeometry(22, 20, 22), brickMat);
-        seBuilding.position.set(25, 10, 25);
-        seBuilding.castShadow = true;
-        seBuilding.receiveShadow = true;
-        this.scene.add(seBuilding);
-
-        // Creole King Hamburger Neon Marquee (Image 2!)
-        this.buildStoreSign({
-            text: "CREOLE KING HAMBURGER",
-            subtext: "OPEN LATE • FAST FOOD",
-            pos: { x: 14, y: 4.8, z: 14.2 },
+            text: "PATTY'S PUB & BILLIARDS",
+            subtext: "DRAUGHT BEER • ARCADE",
+            pos: { x: 38, y: 5.2, z: 23.8 },
             rotY: Math.PI,
-            bgColor: "#8b1010",
-            textColor: "#ffdd44"
+            bgColor: "#400808",
+            textColor: "#ff8844"
         });
     }
 
-    buildStoreAwning({ x, y, z, width, color1, color2 }) {
-        const awningMat = new THREE.MeshStandardMaterial({ color: color1, roughness: 0.8 });
-        const awningGeo = new THREE.BoxGeometry(width, 0.25, 1.8);
-        awningGeo.rotateX(0.35); // Slanted awning slope
-        const awning = new THREE.Mesh(awningGeo, awningMat);
+    buildStoreAwning({ x, y, z, width, color }) {
+        const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.8 });
+        const geo = new THREE.BoxGeometry(width, 0.25, 1.8);
+        geo.rotateX(0.35);
+        const awning = new THREE.Mesh(geo, mat);
         awning.position.set(x, y, z);
         awning.castShadow = true;
         this.scene.add(awning);
@@ -338,54 +331,35 @@ class CyberBunkerWorld {
         ctx.fillStyle = textColor;
         ctx.font = 'bold 34px Arial, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(text, 256, 58);
+        ctx.fillText(text, 256, 56);
 
         ctx.font = 'bold 18px monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(subtext, 256, 96);
+        ctx.fillText(subtext, 256, 94);
 
         const tex = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.MeshBasicMaterial({ map: tex });
-        const signGeo = new THREE.BoxGeometry(6.5, 1.6, 0.2);
-        const sign = new THREE.Mesh(signGeo, mat);
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(6.5, 1.6, 0.2), new THREE.MeshBasicMaterial({ map: tex }));
         sign.position.set(pos.x, pos.y, pos.z);
         sign.rotation.y = rotY;
         this.scene.add(sign);
     }
 
-    buildParkedCars() {
-        // Build 4 detailed 3D vehicles parked along the curbs:
-        // 1. Sedan (Beige / Vintage Cream - Image 1)
-        this.createCar({
-            type: 'sedan',
-            color: 0xc8b282,
-            pos: { x: 7.5, y: 0, z: 12 },
-            rotY: 0
-        });
+    buildCityVehicles() {
+        // Multiple 3D vehicles parked along avenues and curbs across the huge town:
+        const cars = [
+            // Center Crossroad Vehicles
+            { type: 'sedan', color: 0xc8b282, pos: { x: 8, z: 18 }, rotY: 0 },
+            { type: 'van', color: 0xcc7a00, pos: { x: -8, z: 14 }, rotY: Math.PI },
+            { type: 'police', color: 0x111622, pos: { x: 14, z: -8 }, rotY: Math.PI / 2 },
+            { type: 'taxi', color: 0xffbb00, pos: { x: -14, z: -8 }, rotY: -Math.PI / 2 },
+            // Outer District Vehicles
+            { type: 'sedan', color: 0x224488, pos: { x: 45, z: 14 }, rotY: 0 },
+            { type: 'taxi', color: 0xffbb00, pos: { x: -45, z: 14 }, rotY: Math.PI },
+            { type: 'police', color: 0x111622, pos: { x: 14, z: -45 }, rotY: Math.PI / 2 },
+            { type: 'van', color: 0x334455, pos: { x: -14, z: -45 }, rotY: -Math.PI / 2 }
+        ];
 
-        // 2. Retro Delivery Van (Yellow-Orange - Image 1)
-        this.createCar({
-            type: 'van',
-            color: 0xcc7a00,
-            pos: { x: -7.5, y: 0, z: 8 },
-            rotY: Math.PI
-        });
-
-        // 3. Police Cruiser SUV (Black & White with flashing beacons - Image 3)
-        this.createCar({
-            type: 'police',
-            color: 0x111622,
-            pos: { x: 12, y: 0, z: -7.5 },
-            rotY: Math.PI / 2
-        });
-
-        // 4. NYC Yellow Taxi Cab (Checker Cab - Image 5 & Mr Robot)
-        this.createCar({
-            type: 'taxi',
-            color: 0xffbb00,
-            pos: { x: -12, y: 0, z: -7.5 },
-            rotY: -Math.PI / 2
-        });
+        cars.forEach(c => this.createCar(c));
     }
 
     createCar({ type, color, pos, rotY }) {
@@ -393,277 +367,174 @@ class CyberBunkerWorld {
         carGroup.position.set(pos.x, 0, pos.z);
         carGroup.rotation.y = rotY;
 
-        const bodyMat = new THREE.MeshStandardMaterial({
-            color: color,
-            roughness: 0.35,
-            metalness: 0.6
-        });
-
-        const windowMat = new THREE.MeshStandardMaterial({
-            color: 0x080c14,
-            roughness: 0.1,
-            metalness: 0.9
-        });
-
-        const bumperMat = new THREE.MeshStandardMaterial({
-            color: 0xd0d5dd,
-            roughness: 0.3,
-            metalness: 0.9
-        });
-
-        const tireMat = new THREE.MeshStandardMaterial({
-            color: 0x151618,
-            roughness: 0.8
-        });
-
-        const wheelHubMat = new THREE.MeshStandardMaterial({
-            color: 0xe0e0e0,
-            metalness: 0.8
-        });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.35, metalness: 0.6 });
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0x080c14, roughness: 0.1, metalness: 0.9 });
+        const tireMat = new THREE.MeshStandardMaterial({ color: 0x151618, roughness: 0.8 });
+        const bumperMat = new THREE.MeshStandardMaterial({ color: 0xd0d5dd, metalness: 0.9 });
 
         if (type === 'van') {
-            // Retro Van Body (Tall Boxy Cabin)
-            const vanGeo = new THREE.BoxGeometry(2.1, 1.9, 4.4);
-            const van = new THREE.Mesh(vanGeo, bodyMat);
+            const van = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.9, 4.4), bodyMat);
             van.position.y = 1.25;
             van.castShadow = true;
             carGroup.add(van);
 
-            // Windshield
-            const windGeo = new THREE.BoxGeometry(1.95, 0.7, 0.05);
-            const wind = new THREE.Mesh(windGeo, windowMat);
+            const wind = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.7, 0.05), windowMat);
             wind.position.set(0, 1.5, 2.22);
             carGroup.add(wind);
-
         } else if (type === 'police') {
-            // Police SUV Body
-            const suvGeo = new THREE.BoxGeometry(2.2, 0.9, 4.6);
-            const suv = new THREE.Mesh(suvGeo, bodyMat);
+            const suv = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 4.6), bodyMat);
             suv.position.y = 0.85;
             suv.castShadow = true;
             carGroup.add(suv);
 
-            // Police White Doors panel
-            const doorGeo = new THREE.BoxGeometry(2.22, 0.65, 1.8);
-            const doorMesh = new THREE.Mesh(doorGeo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
-            doorMesh.position.set(0, 0.85, 0);
-            carGroup.add(doorMesh);
+            const door = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.65, 1.8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            door.position.set(0, 0.85, 0);
+            carGroup.add(door);
 
-            // Cabin Roof
-            const cabGeo = new THREE.BoxGeometry(1.85, 0.75, 2.6);
-            const cab = new THREE.Mesh(cabGeo, windowMat);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.75, 2.6), windowMat);
             cab.position.set(0, 1.6, -0.2);
             carGroup.add(cab);
 
-            // Rooftop Police Emergency Lightbar (Red & Blue!)
-            const barGeo = new THREE.BoxGeometry(1.2, 0.15, 0.3);
-            const barMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
-            const lightbar = new THREE.Mesh(barGeo, barMat);
-            lightbar.position.set(0, 2.05, -0.2);
-            carGroup.add(lightbar);
-
-            // Red Beacon
-            const redB = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.14, 0.28), new THREE.MeshBasicMaterial({ color: 0xff0022 }));
-            redB.position.set(-0.35, 2.05, -0.2);
-            carGroup.add(redB);
-
-            // Blue Beacon
-            const blueB = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.14, 0.28), new THREE.MeshBasicMaterial({ color: 0x0066ff }));
-            blueB.position.set(0.35, 2.05, -0.2);
-            carGroup.add(blueB);
-
-            // Flashing Light in scene
-            const pLight = new THREE.PointLight(0x0066ff, 1.5, 15);
+            // Flashing Lightbar (Red/Blue)
+            const pLight = new THREE.PointLight(0x0066ff, 1.6, 18);
             pLight.position.set(0, 2.5, -0.2);
             carGroup.add(pLight);
-            this.policeLight = pLight;
-
+            this.policeLights.push(pLight);
         } else if (type === 'taxi') {
-            // Yellow Taxi Sedan Body
-            const bodyGeo = new THREE.BoxGeometry(2.0, 0.75, 4.4);
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.75, 4.4), bodyMat);
             body.position.y = 0.75;
             body.castShadow = true;
             carGroup.add(body);
 
-            // Passenger Cabin & Windows
-            const cabGeo = new THREE.BoxGeometry(1.75, 0.65, 2.3);
-            const cab = new THREE.Mesh(cabGeo, windowMat);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.65, 2.3), windowMat);
             cab.position.set(0, 1.4, -0.15);
             carGroup.add(cab);
 
-            // Taxi Roof Sign
             const sign = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.3), new THREE.MeshBasicMaterial({ color: 0xfff0a0 }));
             sign.position.set(0, 1.82, -0.15);
             carGroup.add(sign);
-
         } else {
-            // Standard Vintage Sedan (Image 1 style)
-            const bodyGeo = new THREE.BoxGeometry(2.0, 0.7, 4.3);
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.7, 4.3), bodyMat);
             body.position.y = 0.7;
             body.castShadow = true;
             carGroup.add(body);
 
-            const cabGeo = new THREE.BoxGeometry(1.7, 0.6, 2.2);
-            const cab = new THREE.Mesh(cabGeo, windowMat);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.6, 2.2), windowMat);
             cab.position.set(0, 1.3, -0.2);
             carGroup.add(cab);
         }
 
         // 4 Wheels
-        const wheelPositions = [
-            { x: -1.05, z: 1.3 },
-            { x: 1.05, z: 1.3 },
-            { x: -1.05, z: -1.3 },
-            { x: 1.05, z: -1.3 }
-        ];
-
+        const wheelPositions = [{ x: -1.05, z: 1.3 }, { x: 1.05, z: 1.3 }, { x: -1.05, z: -1.3 }, { x: 1.05, z: -1.3 }];
         wheelPositions.forEach(wp => {
             const wheelGroup = new THREE.Group();
             wheelGroup.position.set(wp.x, 0.38, wp.z);
-
-            const tireGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.25, 16);
-            tireGeo.rotateZ(Math.PI / 2);
-            const tire = new THREE.Mesh(tireGeo, tireMat);
+            const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.25, 16), tireMat);
+            tire.rotateZ(Math.PI / 2);
             wheelGroup.add(tire);
-
-            const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.26, 12);
-            hubGeo.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeo, wheelHubMat);
-            wheelGroup.add(hub);
-
             carGroup.add(wheelGroup);
         });
 
-        // Headlights (Warm White Glow)
+        // Headlights & Bumpers
         const hlMat = new THREE.MeshBasicMaterial({ color: 0xfff0c0 });
         const hlL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, 0.05), hlMat);
         hlL.position.set(-0.7, 0.75, 2.2);
         carGroup.add(hlL);
-
         const hlR = hlL.clone();
         hlR.position.x = 0.7;
         carGroup.add(hlR);
 
-        // Chrome Bumpers
         const bumpF = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.18, 0.15), bumperMat);
         bumpF.position.set(0, 0.5, 2.25);
         carGroup.add(bumpF);
-
-        const bumpB = bumpF.clone();
-        bumpB.position.z = -2.25;
-        carGroup.add(bumpB);
 
         this.scene.add(carGroup);
     }
 
     buildOverheadPennants() {
-        // String triangle festival / street bunting banners across the street (Image 4!)
-        const buntingZ = [12, -12];
-        const colors = [0xff3333, 0xffffff, 0x3366ff, 0xffbb00];
+        const buntingLines = [15, -15];
+        const colors = [0xff2222, 0xffffff, 0x2266ff, 0xffaa00];
 
-        buntingZ.forEach(z => {
-            // Connecting Catenary Cable
-            const wireGeo = new THREE.CylinderGeometry(0.015, 0.015, 28, 6);
-            wireGeo.rotateZ(Math.PI / 2);
-            const wire = new THREE.Mesh(wireGeo, new THREE.MeshBasicMaterial({ color: 0x333333 }));
-            wire.position.set(0, 6.8, z);
+        buntingLines.forEach(z => {
+            const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 34, 6), new THREE.MeshBasicMaterial({ color: 0x333333 }));
+            wire.rotateZ(Math.PI / 2);
+            wire.position.set(0, 7.2, z);
             this.scene.add(wire);
 
-            // Hanging Triangle Buntings
-            for (let x = -13; x <= 13; x += 1.3) {
-                const c = colors[Math.abs(Math.floor(x * 3)) % colors.length];
-                const triGeo = new THREE.ConeGeometry(0.35, 0.7, 3);
-                triGeo.rotateZ(Math.PI); // Point downwards
-                const flag = new THREE.Mesh(triGeo, new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
-                flag.position.set(x, 6.4, z);
+            for (let x = -16; x <= 16; x += 1.4) {
+                const c = colors[Math.abs(Math.floor(x * 2)) % colors.length];
+                const flag = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 3), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+                flag.rotateZ(Math.PI);
+                flag.position.set(x, 6.7, z);
                 this.scene.add(flag);
             }
         });
     }
 
-    buildSidewalkTreesAndProps() {
+    buildStreetTreesAndProps() {
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3e271a, roughness: 0.9 });
         const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e4a28, roughness: 0.8 });
         const autumnMat = new THREE.MeshStandardMaterial({ color: 0xa85522, roughness: 0.8 });
 
-        // Sidewalk Trees (Images 1 & 4!)
-        const treeLocations = [
-            { x: -12, z: -18, autumn: true },
-            { x: 12, z: -18, autumn: false },
-            { x: -12, z: 18, autumn: false },
-            { x: 12, z: 18, autumn: true }
+        const treeCoords = [
+            { x: -14, z: -20, a: true }, { x: 14, z: -20, a: false },
+            { x: -14, z: 20, a: false }, { x: 14, z: 20, a: true },
+            { x: -50, z: -20, a: true }, { x: 50, z: -20, a: false },
+            { x: -50, z: 20, a: false }, { x: 50, z: 20, a: true },
+            { x: -20, z: -50, a: true }, { x: 20, z: -50, a: false }
         ];
 
-        treeLocations.forEach(tl => {
-            const treeGroup = new THREE.Group();
-            treeGroup.position.set(tl.x, 0, tl.z);
+        treeCoords.forEach(t => {
+            const tree = new THREE.Group();
+            tree.position.set(t.x, 0, t.z);
 
-            // Trunk
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 5, 8), trunkMat);
             trunk.position.y = 2.5;
             trunk.castShadow = true;
-            treeGroup.add(trunk);
+            tree.add(trunk);
 
-            // Leafy Canopy
-            const canopyMat = tl.autumn ? autumnMat : leafMat;
-            const canopy1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.8, 1), canopyMat);
-            canopy1.position.y = 5.2;
-            canopy1.castShadow = true;
-            treeGroup.add(canopy1);
+            const canopy = new THREE.Mesh(new THREE.DodecahedronGeometry(1.9, 1), t.a ? autumnMat : leafMat);
+            canopy.position.y = 5.4;
+            canopy.castShadow = true;
+            tree.add(canopy);
 
-            const canopy2 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.4, 1), canopyMat);
-            canopy2.position.set(0.4, 6.2, 0.2);
-            treeGroup.add(canopy2);
-
-            this.scene.add(treeGroup);
+            this.scene.add(tree);
         });
 
-        // Sidewalk Benches
-        const benchMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.8 });
-        const benchNW = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.7), benchMat);
-        benchNW.position.set(-13, 0.45, -10);
-        this.scene.add(benchNW);
-
-        // Fire Hydrants (Red with silver caps - Image 4)
+        // Fire Hydrants & Benches
         const hydMat = new THREE.MeshStandardMaterial({ color: 0xd92626 });
         const hyd1 = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.75, 8), hydMat);
-        hyd1.position.set(-11.5, 0.45, -9);
+        hyd1.position.set(-13.5, 0.45, -11);
         this.scene.add(hyd1);
 
         const hyd2 = hyd1.clone();
-        hyd2.position.set(11.5, 0.45, 9);
+        hyd2.position.set(13.5, 0.45, 11);
         this.scene.add(hyd2);
     }
 
     buildStreetLamps() {
         const lampMat = new THREE.MeshStandardMaterial({ color: 0x1a261c, roughness: 0.4, metalness: 0.8 });
 
-        const lampPositions = [
-            { x: -11.5, z: -11.5 },
-            { x: 11.5, z: -11.5 },
-            { x: -11.5, z: 11.5 },
-            { x: 11.5, z: 11.5 }
+        const lamps = [
+            { x: -13, z: -13 }, { x: 13, z: -13 }, { x: -13, z: 13 }, { x: 13, z: 13 },
+            { x: -55, z: -13 }, { x: 55, z: -13 }, { x: -55, z: 13 }, { x: 55, z: 13 }
         ];
 
-        lampPositions.forEach(p => {
+        lamps.forEach(p => {
             const lamp = new THREE.Group();
             lamp.position.set(p.x, 0, p.z);
 
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 6.8, 8), lampMat);
-            post.position.y = 3.4;
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 7.0, 8), lampMat);
+            post.position.y = 3.5;
             post.castShadow = true;
             lamp.add(post);
 
-            // Curved neck arm
             const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.4), lampMat);
-            arm.position.set(p.x < 0 ? 0.6 : -0.6, 6.7, 0);
+            arm.position.set(p.x < 0 ? 0.6 : -0.6, 6.9, 0);
             lamp.add(arm);
 
-            // Fixture & Bulb
             const fixture = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.2, 0.45), lampMat);
-            fixture.position.set(p.x < 0 ? 1.2 : -1.2, 6.6, 0);
+            fixture.position.set(p.x < 0 ? 1.2 : -1.2, 6.8, 0);
             lamp.add(fixture);
 
             const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffeaad }));
@@ -671,10 +542,9 @@ class CyberBunkerWorld {
             bulb.position.y -= 0.12;
             lamp.add(bulb);
 
-            // Warm Spot Light casting soft shadows onto road
-            const spot = new THREE.SpotLight(0xffeaad, 2.2, 22, Math.PI / 3.2, 0.6, 1.2);
+            const spot = new THREE.SpotLight(0xffeaad, 2.2, 26, Math.PI / 3.2, 0.6, 1.2);
             spot.position.copy(bulb.position);
-            spot.target.position.set(p.x < 0 ? p.x + 2.5 : p.x - 2.5, 0, p.z);
+            spot.target.position.set(p.x < 0 ? p.x + 3 : p.x - 3, 0, p.z);
             spot.castShadow = true;
             spot.shadow.mapSize.width = 1024;
             spot.shadow.mapSize.height = 1024;
@@ -688,16 +558,15 @@ class CyberBunkerWorld {
     buildChallengeStations() {
         const challenges = window.CHALLENGES_DATA || [];
 
-        // Realistic town locations for the 6 stations:
+        // Realistic metropolis locations across town:
         const stationPlacements = {
             'station-web': {
-                title: "Ron's Coffee Cafe Table",
-                pos: { x: -13.5, z: -13.5 },
+                title: "Ron's Coffee Infiltration Table",
+                pos: { x: 22.0, z: 18.0 },
                 color: 0x00f0ff,
                 meshCreator: () => {
-                    // Cafe Table + Elliot's Thinkpad
                     const g = new THREE.Group();
-                    const table = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+                    const table = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x222222 }));
                     table.position.y = 0.4;
                     g.add(table);
 
@@ -714,7 +583,7 @@ class CyberBunkerWorld {
             },
             'station-crypto': {
                 title: "E-Corp ATM Kiosk",
-                pos: { x: 13.5, z: -13.5 },
+                pos: { x: 26.0, z: -20.0 },
                 color: 0xffb703,
                 meshCreator: () => {
                     const g = new THREE.Group();
@@ -729,8 +598,8 @@ class CyberBunkerWorld {
                 }
             },
             'station-linux': {
-                title: "Street Telecom Box",
-                pos: { x: -13.5, z: 13.5 },
+                title: "Allsafe Fiber Telecom Box",
+                pos: { x: -22.0, z: -20.0 },
                 color: 0x00ff66,
                 meshCreator: () => {
                     const g = new THREE.Group();
@@ -746,10 +615,9 @@ class CyberBunkerWorld {
             },
             'station-forensics': {
                 title: "Police Cruiser Terminal",
-                pos: { x: 12.0, z: -7.5 },
+                pos: { x: 14.0, z: -8.0 },
                 color: 0xff007f,
                 meshCreator: () => {
-                    // Mobile Data Terminal (MDT) inside Police car
                     const g = new THREE.Group();
                     const screen = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.04), new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 0.9 }));
                     screen.position.set(0, 1.5, 0.3);
@@ -758,8 +626,8 @@ class CyberBunkerWorld {
                 }
             },
             'station-rev': {
-                title: "Patty's Pub Alley Arcade",
-                pos: { x: 13.5, z: 13.5 },
+                title: "Chinatown Alley Arcade",
+                pos: { x: -22.0, z: 22.0 },
                 color: 0xff3333,
                 meshCreator: () => {
                     const g = new THREE.Group();
@@ -775,22 +643,22 @@ class CyberBunkerWorld {
             },
             'station-boss': {
                 title: "E-Corp Vault Blast Gate",
-                pos: { x: 25.0, z: -25.0 },
+                pos: { x: 50.0, z: -40.0 },
                 color: 0xb026ff,
                 isBoss: true,
                 meshCreator: () => {
                     const g = new THREE.Group();
-                    const frame = new THREE.Mesh(new THREE.BoxGeometry(7, 8, 1.5), new THREE.MeshStandardMaterial({ color: 0x1e222d, metalness: 0.9 }));
-                    frame.position.y = 4;
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(8, 9, 1.5), new THREE.MeshStandardMaterial({ color: 0x1e222d, metalness: 0.9 }));
+                    frame.position.y = 4.5;
                     g.add(frame);
 
-                    const door = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 2.8, 0.8, 32), new THREE.MeshStandardMaterial({ color: 0x2e3544, metalness: 0.9 }));
+                    const door = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.8, 32), new THREE.MeshStandardMaterial({ color: 0x2e3544, metalness: 0.9 }));
                     door.rotateX(Math.PI / 2);
-                    door.position.set(0, 4, 0.6);
+                    door.position.set(0, 4.5, 0.6);
                     g.add(door);
 
-                    const wheel = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.1, 12, 24), new THREE.MeshStandardMaterial({ color: 0xd0d5dd, metalness: 0.9 }));
-                    wheel.position.set(0, 4, 1.1);
+                    const wheel = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.12, 12, 24), new THREE.MeshStandardMaterial({ color: 0xd0d5dd, metalness: 0.9 }));
+                    wheel.position.set(0, 4.5, 1.1);
                     g.add(wheel);
 
                     return { root: g, holo: wheel };
@@ -802,28 +670,25 @@ class CyberBunkerWorld {
             const config = stationPlacements[ch.id];
             if (!config) return;
 
-            // Overwrite positions with town placements
             ch.pos = config.pos;
 
             const { root, holo } = config.meshCreator();
             root.position.set(config.pos.x, 0, config.pos.z);
 
-            // Proximity ground glowing ring
-            const ringGeo = new THREE.RingGeometry(2.2, 2.5, 32);
+            const ringGeo = new THREE.RingGeometry(2.4, 2.8, 32);
             ringGeo.rotateX(-Math.PI / 2);
             const ringMat = new THREE.MeshBasicMaterial({
                 color: config.color,
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.6
+                opacity: 0.65
             });
             const ring = new THREE.Mesh(ringGeo, ringMat);
             ring.position.y = 0.03;
             root.add(ring);
 
-            // Point light
-            const pLight = new THREE.PointLight(config.color, 1.2, 8);
-            pLight.position.set(0, 1.6, 0.5);
+            const pLight = new THREE.PointLight(config.color, 1.4, 9);
+            pLight.position.set(0, 1.8, 0.5);
             root.add(pLight);
 
             this.scene.add(root);
@@ -834,7 +699,7 @@ class CyberBunkerWorld {
                 pos: config.pos,
                 holo: holo,
                 ring: ring,
-                radius: 3.5,
+                radius: 3.8,
                 isBoss: config.isBoss || false
             });
         });
@@ -843,11 +708,11 @@ class CyberBunkerWorld {
     update(delta, playerPos, totalScore) {
         const time = performance.now() * 0.001;
 
-        // Flash Police Cruiser Emergency Beacons (Red & Blue flashing!)
-        if (this.policeLight) {
+        // Flash Police Cruiser Emergency Beacons
+        this.policeLights.forEach(pl => {
             const isRed = Math.floor(time * 6) % 2 === 0;
-            this.policeLight.color.setHex(isRed ? 0xff0022 : 0x0066ff);
-        }
+            pl.color.setHex(isRed ? 0xff0022 : 0x0066ff);
+        });
 
         // Animate screens
         this.terminals.forEach(t => {

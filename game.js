@@ -231,50 +231,71 @@ class CyberCTFGame {
         const ctx = canvas.getContext('2d');
         const size = canvas.width;
         const center = size / 2;
-        const scale = (size - 16) / 60; // 60x60 world map scale
+        const scale = (size - 16) / 200; // 200m metropolis world map scale
 
         // Clear background
-        ctx.fillStyle = 'rgba(6, 12, 22, 0.85)';
+        ctx.fillStyle = 'rgba(10, 14, 24, 0.92)';
         ctx.fillRect(0, 0, size, size);
 
-        // GTA Style Map Background & Road Network
-        const rw = 24 * scale; // Road width on minimap
+        // City Blocks (Dark slate)
+        ctx.fillStyle = '#121824';
+        ctx.fillRect(4, 4, size - 8, size - 8);
 
-        // 4 Corner Building Blocks (Dark slate)
-        ctx.fillStyle = '#111724';
-        ctx.fillRect(8, 8, center - rw/2 - 8, center - rw/2 - 8); // NW
-        ctx.fillRect(center + rw/2, 8, center - rw/2 - 8, center - rw/2 - 8); // NE
-        ctx.fillRect(8, center + rw/2, center - rw/2 - 8, center - rw/2 - 8); // SW
-        ctx.fillRect(center + rw/2, center + rw/2, center - rw/2 - 8, center - rw/2 - 8); // SE
+        // Road network (Asphalt Gray)
+        const mainRoadW = 18 * scale;
+        const secRoadW = 14 * scale;
 
-        // Roads (Asphalt Gray)
-        ctx.fillStyle = '#2c3545';
-        ctx.fillRect(center - rw/2, 8, rw, size - 16); // North-South Avenue
-        ctx.fillRect(8, center - rw/2, size - 16, rw); // East-West Street
+        ctx.fillStyle = '#252d3d';
 
-        // Road double yellow center line
+        // Main Avenue (North-South)
+        ctx.fillRect(center - mainRoadW / 2, 4, mainRoadW, size - 8);
+        // Main Boulevard (East-West)
+        ctx.fillRect(4, center - mainRoadW / 2, size - 8, mainRoadW);
+
+        // Secondary Avenues (East/West grid lines at x = ±60m)
+        [-60, 60].forEach(gx => {
+            const rx = center + gx * scale;
+            ctx.fillRect(rx - secRoadW / 2, 4, secRoadW, size - 8);
+        });
+
+        // Secondary Streets (North/South grid lines at z = ±60m)
+        [-60, 60].forEach(gz => {
+            const rz = center + gz * scale;
+            ctx.fillRect(4, rz - secRoadW / 2, size - 8, secRoadW);
+        });
+
+        // Road double yellow center lines
         ctx.strokeStyle = '#f5b700';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(center, 8); ctx.lineTo(center, center - rw/2);
-        ctx.moveTo(center, center + rw/2); ctx.lineTo(center, size - 8);
-        ctx.moveTo(8, center); ctx.lineTo(center - rw/2, center);
-        ctx.moveTo(center + rw/2, center); ctx.lineTo(size - 8, center);
+        // Main axis lines
+        ctx.moveTo(center, 4); ctx.lineTo(center, size - 4);
+        ctx.moveTo(4, center); ctx.lineTo(size - 4, center);
+        // Secondary road center lines
+        [-60, 60].forEach(gx => {
+            const rx = center + gx * scale;
+            ctx.moveTo(rx, 4); ctx.lineTo(rx, size - 4);
+        });
+        [-60, 60].forEach(gz => {
+            const rz = center + gz * scale;
+            ctx.moveTo(4, rz); ctx.lineTo(size - 4, rz);
+        });
         ctx.stroke();
 
         // Outer Town Boundary
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(8, 8, size - 16, size - 16);
+        ctx.strokeRect(4, 4, size - 8, size - 8);
 
         // Draw Infiltration Targets
-        const challenges = window.challengeManager.challenges;
+        const challenges = window.challengeManager ? window.challengeManager.challenges : [];
         challenges.forEach(ch => {
+            if (!ch.pos) return;
             const mapX = center + ch.pos.x * scale;
             const mapY = center + ch.pos.z * scale;
 
             ctx.beginPath();
-            ctx.arc(mapX, mapY, 4.5, 0, Math.PI * 2);
+            ctx.arc(mapX, mapY, 3.5, 0, Math.PI * 2);
             ctx.fillStyle = ch.solved ? '#00ff66' : (ch.color || '#ff007f');
             ctx.shadowColor = ch.solved ? '#00ff66' : '#ff007f';
             ctx.shadowBlur = 4;
@@ -282,31 +303,33 @@ class CyberCTFGame {
             ctx.shadowBlur = 0;
 
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.8;
             ctx.stroke();
         });
 
         // Draw Player Arrow (GTA V style)
-        const playerX = center + this.player.position.x * scale;
-        const playerY = center + this.player.position.z * scale;
-        const angle = this.player.rotation;
+        if (this.player) {
+            const playerX = center + this.player.position.x * scale;
+            const playerY = center + this.player.position.z * scale;
+            const angle = this.player.rotation;
 
-        ctx.save();
-        ctx.translate(playerX, playerY);
-        ctx.rotate(angle);
+            ctx.save();
+            ctx.translate(playerX, playerY);
+            ctx.rotate(angle);
 
-        ctx.beginPath();
-        ctx.moveTo(0, 8);
-        ctx.lineTo(-4.5, -6);
-        ctx.lineTo(4.5, -6);
-        ctx.closePath();
-        ctx.fillStyle = '#00f0ff';
-        ctx.shadowColor = '#00f0ff';
-        ctx.shadowBlur = 6;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(0, 6.5);
+            ctx.lineTo(-4, -4.5);
+            ctx.lineTo(4, -4.5);
+            ctx.closePath();
+            ctx.fillStyle = '#00f0ff';
+            ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = 5;
+            ctx.fill();
+            ctx.shadowBlur = 0;
 
-        ctx.restore();
+            ctx.restore();
+        }
     }
 
     renderDashboard() {
