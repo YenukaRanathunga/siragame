@@ -445,8 +445,38 @@ class CyberHackerAvatar {
             const rotatedZ = moveDir.x * Math.sin(angle) + moveDir.z * Math.cos(angle);
 
             const speed = this.keys.sprint ? this.runSpeed : this.walkSpeed;
-            this.position.x += rotatedX * speed * dt;
-            this.position.z += rotatedZ * speed * dt;
+            const colliders = window.worldColliders || [];
+            const charRadius = 0.75;
+
+            // X-axis movement with solid wall collision check
+            const nextX = this.position.x + rotatedX * speed * dt;
+            let canMoveX = true;
+            for (let i = 0; i < colliders.length; i++) {
+                const c = colliders[i];
+                if (nextX + charRadius > c.minX && nextX - charRadius < c.maxX &&
+                    this.position.z + charRadius > c.minZ && this.position.z - charRadius < c.maxZ) {
+                    canMoveX = false;
+                    break;
+                }
+            }
+            if (canMoveX) {
+                this.position.x = nextX;
+            }
+
+            // Z-axis movement with solid wall collision check (enables smooth wall sliding)
+            const nextZ = this.position.z + rotatedZ * speed * dt;
+            let canMoveZ = true;
+            for (let i = 0; i < colliders.length; i++) {
+                const c = colliders[i];
+                if (this.position.x + charRadius > c.minX && this.position.x - charRadius < c.maxX &&
+                    nextZ + charRadius > c.minZ && nextZ - charRadius < c.maxZ) {
+                    canMoveZ = false;
+                    break;
+                }
+            }
+            if (canMoveZ) {
+                this.position.z = nextZ;
+            }
 
             this.rotation = Math.atan2(rotatedX, rotatedZ);
             this.mesh.rotation.y = this.rotation;

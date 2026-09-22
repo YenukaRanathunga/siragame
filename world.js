@@ -1,5 +1,5 @@
-// High-Fidelity 1.2-Kilometer Coastal Metropolis (Cities: Skylines Style)
-// Textured Buildings, Glass Windows, Brick Facades, Raised Sidewalks, Mountain Backdrop & Harbor Piers
+// 1.2-Kilometer Coastal Metropolis with Solid Building Collisions
+// Warm Golden Sandstone, Terracotta Brick, Glowing Windows & Paved Sidewalks (Matching Photo)
 
 class CyberBunkerWorld {
     constructor(scene) {
@@ -9,8 +9,9 @@ class CyberBunkerWorld {
         this.clouds = [];
         this.waterMesh = null;
         this.policeLights = [];
+        this.colliders = [];
 
-        // Build procedural texture palette
+        // Build procedural texture palette matching uploaded photo
         this.textures = this.initProceduralTextures();
 
         this.initAtmosphere();
@@ -21,18 +22,31 @@ class CyberBunkerWorld {
         this.buildOceanCruiseLiner();
         this.buildCargoContainerShip();
         this.buildTexturedCityBlocks();
+        this.buildFlatironLandmarkBuilding();
         this.buildCentralParkDistrict();
-        this.buildStreetPropsAndFoliage();
+        this.buildStreetPropsAndLighting();
         this.buildMetropolisVehicles();
         this.buildChallengeStations();
+
+        // Export colliders globally for player collision physics
+        window.worldColliders = this.colliders;
+    }
+
+    addBoxCollider(x, z, width, depth) {
+        this.colliders.push({
+            minX: x - width / 2,
+            maxX: x + width / 2,
+            minZ: z - depth / 2,
+            maxZ: z + depth / 2
+        });
     }
 
     initAtmosphere() {
-        // Bright, crisp aerial perspective (matching Cities: Skylines)
-        this.scene.fog = new THREE.Fog(0x9bd2f8, 350, 2400);
+        // Soft, warm atmospheric aerial haze
+        this.scene.fog = new THREE.Fog(0xa4caf0, 320, 2400);
 
-        // High-contrast Golden Sunlight
-        const sunLight = new THREE.DirectionalLight(0xfffaec, 2.05);
+        // Warm Golden Sunlight (Matching Photo's Warm Tones)
+        const sunLight = new THREE.DirectionalLight(0xfffae8, 2.05);
         sunLight.position.set(280, 480, 220);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 2048;
@@ -46,104 +60,60 @@ class CyberBunkerWorld {
         sunLight.shadow.bias = -0.0003;
         this.scene.add(sunLight);
 
-        // Natural Sky & Ground Bounce (Rich sky blue and vibrant grass green)
-        const hemiLight = new THREE.HemisphereLight(0x6eb5ff, 0x5a8a42, 1.25);
+        // Warm Ambient Sky Bounce (Soft blue sky and warm stone ground bounce)
+        const hemiLight = new THREE.HemisphereLight(0x78a8d4, 0x7a6c56, 1.3);
         this.scene.add(hemiLight);
 
-        // Soft secondary fill
-        const fillLight = new THREE.DirectionalLight(0xb5dcf8, 0.45);
+        // Secondary soft fill
+        const fillLight = new THREE.DirectionalLight(0xb2d6f5, 0.45);
         fillLight.position.set(-220, 260, -220);
         this.scene.add(fillLight);
     }
 
     initProceduralTextures() {
-        // High-Resolution Procedural Canvas Textures for Buildings & Surfaces
         return {
-            glassOffice: this.createGlassOfficeTexture(),
-            brickFacade: this.createBrickFacadeTexture(),
-            modernStucco: this.createModernStuccoTexture(),
-            storefront: this.createStorefrontTexture(),
-            roofGravel: this.createRoofGravelTexture(),
-            asphalt: this.createAsphaltRoadTexture(),
-            sidewalk: this.createSidewalkTexture()
+            goldenSandstone: this.createGoldenSandstoneTexture(),
+            terracottaBrick: this.createTerracottaBrickTexture(),
+            charcoalGlass: this.createCharcoalGlassTexture(),
+            navyStorefront: this.createNavyStorefrontTexture(),
+            pavedStreet: this.createPavedStreetTexture(),
+            flagstoneSidewalk: this.createFlagstoneSidewalkTexture(),
+            roofGravel: this.createRoofGravelTexture()
         };
     }
 
-    createGlassOfficeTexture() {
+    createGoldenSandstoneTexture() {
+        // Warm Honey-Gold Sandstone with Glowing Windows (Directly from Photo)
         const c = document.createElement('canvas');
         c.width = 512;
         c.height = 512;
         const ctx = c.getContext('2d');
 
-        // Dark corporate steel background
-        ctx.fillStyle = '#1e2430';
+        // Warm golden sandstone base
+        ctx.fillStyle = '#d6be8c';
         ctx.fillRect(0, 0, 512, 512);
 
-        // Grid of reflective glass office windows
-        const cols = 8;
-        const rows = 12;
-        const cellW = 512 / cols;
-        const cellH = 512 / rows;
-
-        for (let r = 0; r < rows; r++) {
-            // Horizontal metallic floor spandrel
-            ctx.fillStyle = '#2d3545';
-            ctx.fillRect(0, r * cellH, 512, 4);
-
-            for (let cIdx = 0; cIdx < cols; cIdx++) {
-                const wx = cIdx * cellW + 4;
-                const wy = r * cellH + 6;
-                const ww = cellW - 8;
-                const wh = cellH - 10;
-
-                // Reflective window pane gradient (sky reflection)
-                const winGrad = ctx.createLinearGradient(wx, wy, wx, wy + wh);
-                const isLit = (cIdx + r * 3) % 7 === 0;
-                if (isLit) {
-                    winGrad.addColorStop(0, '#fce088');
-                    winGrad.addColorStop(1, '#d49b28');
-                } else {
-                    winGrad.addColorStop(0, '#508ec2');
-                    winGrad.addColorStop(0.5, '#2e5d87');
-                    winGrad.addColorStop(1, '#1a3754');
-                }
-                ctx.fillStyle = winGrad;
-                ctx.fillRect(wx, wy, ww, wh);
-
-                // Window frame mullions
-                ctx.strokeStyle = '#141821';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(wx, wy, ww, wh);
+        // Stone ashlar block joints
+        ctx.strokeStyle = '#baa16f';
+        ctx.lineWidth = 2;
+        for (let y = 0; y < 512; y += 42) {
+            ctx.beginPath();
+            ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+            const offset = (y / 42) % 2 === 0 ? 0 : 32;
+            for (let x = offset; x < 512; x += 64) {
+                ctx.beginPath();
+                ctx.moveTo(x, y); ctx.lineTo(x, y + 42); ctx.stroke();
             }
         }
 
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        return tex;
-    }
-
-    createBrickFacadeTexture() {
-        const c = document.createElement('canvas');
-        c.width = 512;
-        c.height = 512;
-        const ctx = c.getContext('2d');
-
-        // Warm red/brown masonry brick
-        ctx.fillStyle = '#8f4637';
-        ctx.fillRect(0, 0, 512, 512);
-
-        // Brick mortar lines
-        ctx.fillStyle = '#6e3326';
-        for (let y = 0; y < 512; y += 8) {
-            ctx.fillRect(0, y, 512, 1.5);
-            const offset = (y / 8) % 2 === 0 ? 0 : 12;
-            for (let x = offset; x < 512; x += 24) {
-                ctx.fillRect(x, y, 1.5, 8);
-            }
+        // Quoin corner stones on vertical edges
+        ctx.fillStyle = '#c5ac77';
+        for (let y = 0; y < 512; y += 28) {
+            ctx.fillRect(0, y, (y / 28) % 2 === 0 ? 24 : 14, 26);
+            ctx.fillRect(512 - ((y / 28) % 2 === 0 ? 24 : 14), y, 24, 26);
         }
 
-        // Window bays with stone lintels
+        // Window bays with warm glowing interior lights (Matching Photo!)
         const cols = 6;
         const rows = 8;
         const cellW = 512 / cols;
@@ -151,29 +121,40 @@ class CyberBunkerWorld {
 
         for (let r = 0; r < rows; r++) {
             for (let col = 0; col < cols; col++) {
-                const wx = col * cellW + 12;
+                const wx = col * cellW + 14;
                 const wy = r * cellH + 16;
-                const ww = cellW - 24;
-                const wh = cellH - 28;
+                const ww = cellW - 28;
+                const wh = cellH - 30;
 
-                // White stone lintel & sill
-                ctx.fillStyle = '#edeae4';
-                ctx.fillRect(wx - 2, wy - 4, ww + 4, 4); // Top lintel
-                ctx.fillRect(wx - 4, wy + wh, ww + 8, 4); // Bottom sill
+                // Stone pediment lintel & sill
+                ctx.fillStyle = '#ebd8b2';
+                ctx.fillRect(wx - 3, wy - 5, ww + 6, 5); // Lintel
+                ctx.fillRect(wx - 4, wy + wh, ww + 8, 4); // Sill
 
-                // Glass pane
-                ctx.fillStyle = '#1c2e42';
+                // Dark bronze window frame
+                ctx.fillStyle = '#2b2319';
                 ctx.fillRect(wx, wy, ww, wh);
 
-                // White window sash frame
-                ctx.strokeStyle = '#ffffff';
+                // Warm glowing interior amber light (Matching Photo)
+                const isLit = (col + r * 2) % 3 !== 0;
+                if (isLit) {
+                    const glow = ctx.createLinearGradient(wx, wy, wx, wy + wh);
+                    glow.addColorStop(0, '#fff0a6');
+                    glow.addColorStop(0.6, '#ffd56b');
+                    glow.addColorStop(1, '#e6ab27');
+                    ctx.fillStyle = glow;
+                    ctx.fillRect(wx + 2, wy + 2, ww - 4, wh - 4);
+                } else {
+                    ctx.fillStyle = '#1c242e';
+                    ctx.fillRect(wx + 2, wy + 2, ww - 4, wh - 4);
+                }
+
+                // Window pane sash
+                ctx.strokeStyle = '#3a2d1d';
                 ctx.lineWidth = 1.5;
-                ctx.strokeRect(wx, wy, ww, wh);
                 ctx.beginPath();
                 ctx.moveTo(wx + ww / 2, wy);
                 ctx.lineTo(wx + ww / 2, wy + wh);
-                ctx.moveTo(wx, wy + wh / 2);
-                ctx.lineTo(wx + ww, wy + wh / 2);
                 ctx.stroke();
             }
         }
@@ -184,36 +165,60 @@ class CyberBunkerWorld {
         return tex;
     }
 
-    createModernStuccoTexture() {
+    createTerracottaBrickTexture() {
+        // Deep Warm Red/Brown Terracotta Brick (Matching Photo's Red Tower)
         const c = document.createElement('canvas');
         c.width = 512;
         c.height = 512;
         const ctx = c.getContext('2d');
 
-        // Warm architectural cream concrete
-        ctx.fillStyle = '#e5dfd3';
+        // Warm earthy terracotta brick
+        ctx.fillStyle = '#8f3e2d';
         ctx.fillRect(0, 0, 512, 512);
 
-        // Concrete panel joint lines
-        ctx.strokeStyle = '#c7beaf';
-        ctx.lineWidth = 2;
-        for (let y = 0; y < 512; y += 64) {
-            ctx.beginPath();
-            ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
-        }
-        for (let x = 0; x < 512; x += 128) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+        // Masonry mortar coursing
+        ctx.fillStyle = '#6e2b1d';
+        for (let y = 0; y < 512; y += 8) {
+            ctx.fillRect(0, y, 512, 1.5);
+            const offset = (y / 8) % 2 === 0 ? 0 : 12;
+            for (let x = offset; x < 512; x += 24) {
+                ctx.fillRect(x, y, 1.5, 8);
+            }
         }
 
-        // Horizontal ribbon windows
-        for (let y = 18; y < 512; y += 64) {
-            ctx.fillStyle = '#22364c';
-            ctx.fillRect(10, y, 492, 28);
-            // Window dividers
-            ctx.fillStyle = '#3a4e63';
-            for (let x = 10; x < 500; x += 38) {
-                ctx.fillRect(x, y, 2.5, 28);
+        // Horizontal white limestone decorative belt courses
+        ctx.fillStyle = '#eddac0';
+        ctx.fillRect(0, 128, 512, 6);
+        ctx.fillRect(0, 256, 512, 6);
+        ctx.fillRect(0, 384, 512, 6);
+
+        // Windows with warm amber interior glow
+        const cols = 5;
+        const rows = 8;
+        const cellW = 512 / cols;
+        const cellH = 512 / rows;
+
+        for (let r = 0; r < rows; r++) {
+            for (let col = 0; col < cols; col++) {
+                const wx = col * cellW + 18;
+                const wy = r * cellH + 16;
+                const ww = cellW - 36;
+                const wh = cellH - 30;
+
+                ctx.fillStyle = '#eddac0';
+                ctx.fillRect(wx - 2, wy - 4, ww + 4, 4);
+                ctx.fillRect(wx - 3, wy + wh, ww + 6, 4);
+
+                ctx.fillStyle = '#1e1c1b';
+                ctx.fillRect(wx, wy, ww, wh);
+
+                // Warm interior lamp glow
+                const glow = ctx.createRadialGradient(wx + ww / 2, wy + wh / 2, 2, wx + ww / 2, wy + wh / 2, ww);
+                glow.addColorStop(0, '#ffefa3');
+                glow.addColorStop(0.5, '#ffd25a');
+                glow.addColorStop(1, '#946618');
+                ctx.fillStyle = glow;
+                ctx.fillRect(wx + 2, wy + 2, ww - 4, wh - 4);
             }
         }
 
@@ -223,116 +228,137 @@ class CyberBunkerWorld {
         return tex;
     }
 
-    createStorefrontTexture() {
+    createCharcoalGlassTexture() {
+        // Deep Charcoal & Navy Corporate Skyscraper (Matching Background Tower)
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext('2d');
+
+        ctx.fillStyle = '#1a2029';
+        ctx.fillRect(0, 0, 512, 512);
+
+        const cols = 8;
+        const rows = 14;
+        const cellW = 512 / cols;
+        const cellH = 512 / rows;
+
+        for (let r = 0; r < rows; r++) {
+            ctx.fillStyle = '#262e3d';
+            ctx.fillRect(0, r * cellH, 512, 3);
+
+            for (let col = 0; col < cols; col++) {
+                const wx = col * cellW + 4;
+                const wy = r * cellH + 5;
+                const ww = cellW - 8;
+                const wh = cellH - 8;
+
+                const isLit = (col + r * 5) % 6 === 0;
+                if (isLit) {
+                    ctx.fillStyle = '#fce290';
+                } else {
+                    ctx.fillStyle = '#142a42';
+                }
+                ctx.fillRect(wx, wy, ww, wh);
+
+                ctx.strokeStyle = '#0e1217';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(wx, wy, ww, wh);
+            }
+        }
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+    }
+
+    createNavyStorefrontTexture() {
+        // Navy Blue & Dark Charcoal Retail Storefront (Matching Photo's Street Level)
         const c = document.createElement('canvas');
         c.width = 512;
         c.height = 256;
         const ctx = c.getContext('2d');
 
-        ctx.fillStyle = '#2b313d';
+        // Dark charcoal stone base
+        ctx.fillStyle = '#1e2229';
         ctx.fillRect(0, 0, 512, 256);
-
-        // Ground floor commercial displays
-        const shops = ["CAFE BISTRO", "CITY MARKET", "BOOKSTORE", "BOUTIQUE"];
-        const colors = ["#b32727", "#1e5c99", "#247a3e", "#c27c1f"];
 
         for (let i = 0; i < 4; i++) {
             const sx = i * 128;
 
-            // Striped Canvas Awning
-            const awnColor = colors[i];
-            for (let ax = sx; ax < sx + 128; ax += 16) {
-                ctx.fillStyle = (ax / 16) % 2 === 0 ? awnColor : '#ffffff';
-                ctx.fillRect(ax, 30, 16, 45);
-            }
+            // Deep Navy Blue Fabric Awning (Matching Photo)
+            ctx.fillStyle = '#1b3b6f';
+            ctx.fillRect(sx + 4, 30, 120, 48);
+            ctx.fillStyle = '#2b5294';
+            ctx.fillRect(sx + 4, 74, 120, 6);
 
-            // Signboard
-            ctx.fillStyle = '#181e28';
-            ctx.fillRect(sx + 6, 8, 116, 20);
-            ctx.fillStyle = '#f5b700';
+            // Illuminated Gold Signboard
+            ctx.fillStyle = '#131821';
+            ctx.fillRect(sx + 8, 8, 112, 20);
+            ctx.fillStyle = '#f5c542';
             ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(shops[i], sx + 64, 22);
+            const names = ["JEWELRY & GOLD", "FINE TAILORS", "BOULEVARD CAFE", "METROPOLIS BOOKS"];
+            ctx.fillText(names[i], sx + 64, 22);
 
-            // Large shop display glass
-            ctx.fillStyle = '#182b3d';
-            ctx.fillRect(sx + 10, 80, 108, 160);
-            ctx.strokeStyle = '#48586c';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(sx + 10, 80, 108, 160);
+            // Warm Glowing Boutique Display Windows
+            ctx.fillStyle = '#ffd978';
+            ctx.fillRect(sx + 10, 85, 108, 155);
+            const winGrad = ctx.createLinearGradient(sx + 10, 85, sx + 10, 240);
+            winGrad.addColorStop(0, '#fff4cc');
+            winGrad.addColorStop(0.5, '#ffd269');
+            winGrad.addColorStop(1, '#a67b24');
+            ctx.fillStyle = winGrad;
+            ctx.fillRect(sx + 12, 87, 104, 151);
 
-            // Center entrance door
-            ctx.fillStyle = '#3f2c1c';
-            ctx.fillRect(sx + 44, 110, 40, 130);
-            ctx.strokeStyle = '#f5b700';
-            ctx.strokeRect(sx + 44, 110, 40, 130);
+            // Dark window mullions
+            ctx.strokeStyle = '#181b22';
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(sx + 10, 85, 108, 155);
+
+            // Center Entrance Door
+            ctx.fillStyle = '#2c2219';
+            ctx.fillRect(sx + 46, 110, 36, 130);
+            ctx.strokeStyle = '#e0b848';
+            ctx.strokeRect(sx + 46, 110, 36, 130);
         }
 
         return new THREE.CanvasTexture(c);
     }
 
-    createRoofGravelTexture() {
-        const c = document.createElement('canvas');
-        c.width = 256;
-        c.height = 256;
-        const ctx = c.getContext('2d');
-
-        ctx.fillStyle = '#262b33';
-        ctx.fillRect(0, 0, 256, 256);
-
-        // Tar & gravel noise
-        for (let i = 0; i < 6000; i++) {
-            const x = Math.random() * 256;
-            const y = Math.random() * 256;
-            const b = 30 + Math.random() * 30;
-            ctx.fillStyle = `rgb(${b}, ${b}, ${b+2})`;
-            ctx.fillRect(x, y, 2, 2);
-        }
-
-        // AC unit box footprint
-        ctx.fillStyle = '#3f4754';
-        ctx.fillRect(30, 30, 80, 60);
-        ctx.fillRect(150, 140, 70, 70);
-
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        return tex;
-    }
-
-    createAsphaltRoadTexture() {
+    createPavedStreetTexture() {
+        // Fine Paved Stone Street Texture (Matching Photo's Street)
         const c = document.createElement('canvas');
         c.width = 512;
         c.height = 512;
         const ctx = c.getContext('2d');
 
-        // Fine textured dark asphalt
-        ctx.fillStyle = '#313642';
+        ctx.fillStyle = '#3a3f47';
         ctx.fillRect(0, 0, 512, 512);
 
-        for (let i = 0; i < 25000; i++) {
-            const x = Math.random() * 512;
-            const y = Math.random() * 512;
-            const b = 42 + Math.random() * 24;
-            ctx.fillStyle = `rgb(${b}, ${b+1}, ${b+2})`;
-            ctx.fillRect(x, y, 1.5, 1.5);
+        // Cobblestone / paved block grid
+        ctx.strokeStyle = '#2b3038';
+        ctx.lineWidth = 1.5;
+        for (let y = 0; y < 512; y += 16) {
+            ctx.beginPath();
+            ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+            const offset = (y / 16) % 2 === 0 ? 0 : 12;
+            for (let x = offset; x < 512; x += 24) {
+                ctx.beginPath();
+                ctx.moveTo(x, y); ctx.lineTo(x, y + 16); ctx.stroke();
+            }
         }
 
-        // Road markings: Double yellow center line
+        // Road double yellow center line
         ctx.fillStyle = '#f5b700';
         ctx.fillRect(253, 0, 2.5, 512);
         ctx.fillRect(258, 0, 2.5, 512);
 
-        // White outer edge lines
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.fillRect(18, 0, 3, 512);
-        ctx.fillRect(491, 0, 3, 512);
-
-        // Dashed white lane dividers
-        for (let y = 10; y < 512; y += 42) {
-            ctx.fillRect(135, y, 2.5, 22);
-            ctx.fillRect(375, y, 2.5, 22);
-        }
+        // Solid white outer border lines
+        ctx.fillStyle = 'rgba(240, 245, 255, 0.9)';
+        ctx.fillRect(16, 0, 3, 512);
+        ctx.fillRect(493, 0, 3, 512);
 
         const tex = new THREE.CanvasTexture(c);
         tex.wrapS = THREE.RepeatWrapping;
@@ -341,17 +367,19 @@ class CyberBunkerWorld {
         return tex;
     }
 
-    createSidewalkTexture() {
+    createFlagstoneSidewalkTexture() {
+        // Light Gray Paving Slabs with Dark Borders (Matching Photo's Sidewalk!)
         const c = document.createElement('canvas');
         c.width = 256;
         c.height = 256;
         const ctx = c.getContext('2d');
 
-        ctx.fillStyle = '#b8bcc4';
+        // Light gray center flagstones
+        ctx.fillStyle = '#b8bec7';
         ctx.fillRect(0, 0, 256, 256);
 
-        // Paved flagstone grid
-        ctx.strokeStyle = '#9ca1ab';
+        // Flagstone joints
+        ctx.strokeStyle = '#9ea5b0';
         ctx.lineWidth = 1.5;
         for (let i = 0; i < 256; i += 32) {
             ctx.beginPath();
@@ -360,6 +388,11 @@ class CyberBunkerWorld {
             ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
         }
 
+        // Dark charcoal border pavers (Like in photo)
+        ctx.fillStyle = '#4d535e';
+        ctx.fillRect(0, 0, 256, 8);
+        ctx.fillRect(0, 248, 256, 8);
+
         const tex = new THREE.CanvasTexture(c);
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
@@ -367,8 +400,31 @@ class CyberBunkerWorld {
         return tex;
     }
 
+    createRoofGravelTexture() {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const ctx = c.getContext('2d');
+
+        ctx.fillStyle = '#2c313a';
+        ctx.fillRect(0, 0, 256, 256);
+
+        for (let i = 0; i < 5000; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const b = 35 + Math.random() * 25;
+            ctx.fillStyle = `rgb(${b}, ${b+1}, ${b+3})`;
+            ctx.fillRect(x, y, 2, 2);
+        }
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+    }
+
     buildSkyAndClouds() {
-        // Vibrant Sky Dome
+        // Atmospheric Sky Dome with Golden Warm Horizon
         const skyGeo = new THREE.SphereGeometry(2200, 32, 24);
         const canvas = document.createElement('canvas');
         canvas.width = 256;
@@ -376,10 +432,10 @@ class CyberBunkerWorld {
         const ctx = canvas.getContext('2d');
 
         const grad = ctx.createLinearGradient(0, 0, 0, 512);
-        grad.addColorStop(0.0, '#1050a8'); // Azure zenith
-        grad.addColorStop(0.35, '#358de8'); // Clear sky
-        grad.addColorStop(0.75, '#84beee'); // Sunny horizon
-        grad.addColorStop(1.0, '#dcedfc');
+        grad.addColorStop(0.0, '#1c4a80'); // Deep atmospheric blue
+        grad.addColorStop(0.35, '#427db8');
+        grad.addColorStop(0.7, '#8fbde6');
+        grad.addColorStop(1.0, '#e8eef8'); // Warm horizon
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 256, 512);
 
@@ -387,7 +443,7 @@ class CyberBunkerWorld {
         const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false }));
         this.scene.add(sky);
 
-        // 3D Puffy Cumulus Clouds
+        // Drifting 3D Cumulus Clouds
         const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, flatShading: true });
         for (let i = 0; i < 18; i++) {
             const cloud = new THREE.Group();
@@ -407,15 +463,9 @@ class CyberBunkerWorld {
     }
 
     buildMountainBackdrop() {
-        // Majestic Rolling Green Mountains in the Far Distance (Directly from Image 1)
         const mountainGroup = new THREE.Group();
-        const mountainMat = new THREE.MeshStandardMaterial({
-            color: 0x3d7033, // Rich mountain green
-            roughness: 0.9,
-            flatShading: true
-        });
+        const mountainMat = new THREE.MeshStandardMaterial({ color: 0x3d7033, roughness: 0.9, flatShading: true });
 
-        // 1. North Mountain Ridge (Z = -650, spanning X = -600 to 400)
         for (let x = -550; x <= 450; x += 110) {
             const peakH = 140 + Math.sin(x * 0.02) * 50 + Math.random() * 40;
             const peakR = 90 + Math.random() * 30;
@@ -425,7 +475,6 @@ class CyberBunkerWorld {
             mountainGroup.add(peak);
         }
 
-        // 2. West Mountain Ridge (X = -650, spanning Z = -500 to 500)
         for (let z = -450; z <= 450; z += 120) {
             const peakH = 120 + Math.cos(z * 0.02) * 45 + Math.random() * 35;
             const peakR = 85 + Math.random() * 25;
@@ -435,52 +484,38 @@ class CyberBunkerWorld {
             mountainGroup.add(peak);
         }
 
-        // 3. Distant Suspension Bay Bridge connecting city to the green hills (Matching Image 1)
-        const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x4a5462, metalness: 0.7, roughness: 0.4 });
-        const bDeck = new THREE.Mesh(new THREE.BoxGeometry(220, 2.5, 16), bridgeMat);
-        bDeck.position.set(-420, 32, -620);
-        mountainGroup.add(bDeck);
-
-        // Bridge Suspension Towers
-        [-480, -360].forEach(tx => {
-            const tower = new THREE.Mesh(new THREE.BoxGeometry(7, 75, 18), bridgeMat);
-            tower.position.set(tx, 45, -620);
-            mountainGroup.add(tower);
-        });
-
         this.scene.add(mountainGroup);
     }
 
     buildRoadsSidewalksAndLawns() {
         // Ground base with green turf
-        const grassMat = new THREE.MeshStandardMaterial({ color: 0x4a8c3d, roughness: 0.85 });
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x488a38, roughness: 0.85 });
         const baseGround = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), grassMat);
         baseGround.rotation.x = -Math.PI / 2;
         baseGround.position.y = -0.02;
         baseGround.receiveShadow = true;
         this.scene.add(baseGround);
 
-        // Avenues and Streets with Crisp Asphalt & Repeating Textures
         const roadMat = new THREE.MeshStandardMaterial({
-            map: this.textures.asphalt,
-            roughness: 0.8,
+            map: this.textures.pavedStreet,
+            roughness: 0.75,
             metalness: 0.15
         });
 
-        // 1. Coastal Highway (North-South along X = 200)
-        const hwGeo = new THREE.PlaneGeometry(26, 1160);
-        const hwMesh = new THREE.Mesh(hwGeo, roadMat);
+        // 1. Coastal Highway (Along X = 200)
+        const hwMesh = new THREE.Mesh(new THREE.PlaneGeometry(26, 1160), roadMat);
         hwMesh.rotation.x = -Math.PI / 2;
         hwMesh.position.set(200, 0.05, 0);
         hwMesh.receiveShadow = true;
         this.scene.add(hwMesh);
 
-        // Concrete Highway Guardrail
+        // Highway Concrete Barriers & Collider
         const guardMat = new THREE.MeshStandardMaterial({ color: 0x9ea3ab, roughness: 0.8 });
         const guard = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 1160), guardMat);
         guard.position.set(213, 0.5, 0);
         guard.castShadow = true;
         this.scene.add(guard);
+        this.addBoxCollider(213, 0, 0.8, 1160);
 
         // 2. City Grid Avenues (North-South)
         const avenues = [-400, -260, -120, 20, 160];
@@ -492,28 +527,22 @@ class CyberBunkerWorld {
             this.scene.add(avMesh);
 
             // Raised Sidewalks with Curbs on both sides of Avenue
-            const swMat = new THREE.MeshStandardMaterial({ map: this.textures.sidewalk, roughness: 0.8 });
+            const swMat = new THREE.MeshStandardMaterial({ map: this.textures.flagstoneSidewalk, roughness: 0.8 });
             [-11, 11].forEach(swOffset => {
                 const sw = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.25, 1160), swMat);
                 sw.position.set(ax + swOffset, 0.125, 0);
                 sw.receiveShadow = true;
                 this.scene.add(sw);
-
-                // Concrete curb edge
-                const curb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 1160), guardMat);
-                curb.position.set(ax + (swOffset > 0 ? swOffset - 1.8 : swOffset + 1.8), 0.15, 0);
-                curb.castShadow = true;
-                this.scene.add(curb);
             });
         });
 
         // 3. Cross Streets (East-West)
         const streets = [-450, -320, -190, -60, 70, 200, 330, 460];
         streets.forEach(sz => {
-            const stTex = this.textures.asphalt.clone();
+            const stTex = this.textures.pavedStreet.clone();
             stTex.repeat.set(1, 10);
             stTex.needsUpdate = true;
-            const stMat = new THREE.MeshStandardMaterial({ map: stTex, roughness: 0.8 });
+            const stMat = new THREE.MeshStandardMaterial({ map: stTex, roughness: 0.75 });
 
             const stMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 620), stMat);
             stMesh.rotation.x = -Math.PI / 2;
@@ -525,28 +554,25 @@ class CyberBunkerWorld {
     }
 
     buildWaterfrontHarborAndPiers() {
-        // Deep Coastal Ocean Bay (X = 220 to 650, Z = -600 to 600)
+        // Coastal Ocean Bay (X = 220 to 650)
         const waterGeo = new THREE.PlaneGeometry(450, 1240);
-        const waterMat = new THREE.MeshStandardMaterial({
-            color: 0x146886,
-            roughness: 0.18,
-            metalness: 0.85
-        });
+        const waterMat = new THREE.MeshStandardMaterial({ color: 0x146886, roughness: 0.18, metalness: 0.85 });
         const water = new THREE.Mesh(waterGeo, waterMat);
         water.rotation.x = -Math.PI / 2;
         water.position.set(435, -0.6, 0);
         this.scene.add(water);
         this.waterMesh = water;
 
-        // Harbor Seawall Promenade (Along X = 220)
+        // Seawall Promenade
         const promenade = new THREE.Mesh(
             new THREE.BoxGeometry(18, 1.8, 1180),
-            new THREE.MeshStandardMaterial({ map: this.textures.sidewalk, roughness: 0.85 })
+            new THREE.MeshStandardMaterial({ map: this.textures.flagstoneSidewalk, roughness: 0.85 })
         );
         promenade.position.set(221, 0.4, 0);
         promenade.castShadow = true;
         promenade.receiveShadow = true;
         this.scene.add(promenade);
+        this.addBoxCollider(229, 0, 2, 1180); // Seawall drop-off collider
 
         // 6 Walkable Finger Piers
         const pierZs = [-350, -210, -70, 70, 210, 350];
@@ -578,16 +604,14 @@ class CyberBunkerWorld {
     }
 
     buildOceanCruiseLiner() {
-        // 140m Ocean Cruise Liner docked at Pier 2 (Z = -210, X = 315)
+        // 140m Cruise Liner docked at Pier 2
         const ship = new THREE.Group();
         ship.position.set(315, 0, -188);
 
         const hullMat = new THREE.MeshStandardMaterial({ color: 0x1c2b44, roughness: 0.35, metalness: 0.5 });
         const whiteSuperMat = new THREE.MeshStandardMaterial({ color: 0xf5f7fa, roughness: 0.4, metalness: 0.1 });
         const funnelMat = new THREE.MeshStandardMaterial({ color: 0xd92626, roughness: 0.4 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0x1b3a57, roughness: 0.1, metalness: 0.9 });
 
-        // Hull
         const hull = new THREE.Mesh(new THREE.BoxGeometry(138, 7.5, 21), hullMat);
         hull.position.y = 2.8;
         hull.castShadow = true;
@@ -601,7 +625,6 @@ class CyberBunkerWorld {
         bow.castShadow = true;
         ship.add(bow);
 
-        // Passenger Decks
         const cabins1 = new THREE.Mesh(new THREE.BoxGeometry(105, 4.5, 18.5), whiteSuperMat);
         cabins1.position.set(-6, 9.4, 0);
         cabins1.castShadow = true;
@@ -612,7 +635,6 @@ class CyberBunkerWorld {
         cabins2.castShadow = true;
         ship.add(cabins2);
 
-        // Funnels
         [-2, -32].forEach(fx => {
             const funnel = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.6, 8.5, 16), funnelMat);
             funnel.position.set(fx, 20.8, 0);
@@ -628,10 +650,11 @@ class CyberBunkerWorld {
         ship.add(gangway);
 
         this.scene.add(ship);
+        this.addBoxCollider(315, -188, 138, 21); // Solid ship hull collider
     }
 
     buildCargoContainerShip() {
-        // 120m Cargo Container Ship docked at Pier 4 (Z = 70, X = 310)
+        // 120m Cargo Container Ship docked at Pier 4
         const ship = new THREE.Group();
         ship.position.set(310, 0, 92);
 
@@ -649,7 +672,6 @@ class CyberBunkerWorld {
         bridge.castShadow = true;
         ship.add(bridge);
 
-        // Containers
         let cIdx = 0;
         for (let x = -26; x <= 42; x += 12) {
             for (let z = -6.5; z <= 6.5; z += 4.5) {
@@ -663,84 +685,65 @@ class CyberBunkerWorld {
         }
 
         this.scene.add(ship);
+        this.addBoxCollider(310, 92, 118, 19); // Solid cargo ship collider
     }
 
     buildTexturedCityBlocks() {
-        // Architectural Building Palette with Canvas Textures
-        const matGlass = new THREE.MeshStandardMaterial({
-            map: this.textures.glassOffice,
-            roughness: 0.3,
-            metalness: 0.7
-        });
+        // Materials matching the uploaded photo's warm palette
+        const matGold = new THREE.MeshStandardMaterial({ map: this.textures.goldenSandstone, roughness: 0.7 });
+        const matTerra = new THREE.MeshStandardMaterial({ map: this.textures.terracottaBrick, roughness: 0.8 });
+        const matCharcoal = new THREE.MeshStandardMaterial({ map: this.textures.charcoalGlass, roughness: 0.35, metalness: 0.65 });
+        const matStore = new THREE.MeshStandardMaterial({ map: this.textures.navyStorefront, roughness: 0.6 });
+        const matRoof = new THREE.MeshStandardMaterial({ map: this.textures.roofGravel, roughness: 0.9 });
 
-        const matBrick = new THREE.MeshStandardMaterial({
-            map: this.textures.brickFacade,
-            roughness: 0.85
-        });
+        // 1. Landmark 160m Art Deco Spire Tower (Matching Chrysler/Empire Style)
+        this.buildArtDecoSpireTower(40, -80, matGold, matCharcoal);
 
-        const matStucco = new THREE.MeshStandardMaterial({
-            map: this.textures.modernStucco,
-            roughness: 0.75
-        });
+        // 2. Landmark 115m Crystal Mega-Tower
+        this.buildCrystalMegaTower(-40, -180, matCharcoal);
 
-        const matStore = new THREE.MeshStandardMaterial({
-            map: this.textures.storefront,
-            roughness: 0.6
-        });
-
-        const matRoof = new THREE.MeshStandardMaterial({
-            map: this.textures.roofGravel,
-            roughness: 0.9
-        });
-
-        // 1. Landmark 160m Art Deco Spire Tower (Empire State style)
-        this.buildArtDecoSpireTower(40, -80, matBrick, matGlass);
-
-        // 2. Landmark 115m Crystal Mega-Tower (Faceted Glass)
-        this.buildCrystalMegaTower(-40, -180, matGlass);
-
-        // 3. Dense City Blocks with Window Grids & Rooftop Details
+        // 3. Dense City Blocks with Window Grids & Solid Colliders
         const buildingDefinitions = [
-            // Block 1 (X: -90 to -30, Z: -120 to -30)
-            { x: -65, z: -80, w: 28, d: 26, h: 86, type: 'glass' },
-            { x: -95, z: -55, w: 22, d: 20, h: 58, type: 'brick' },
-            { x: -45, z: -45, w: 24, d: 22, h: 68, type: 'stucco' },
+            // Block 1 (X: -90 to -30, Z: -120 to -30) - Warm Sandstone & Terracotta
+            { x: -65, z: -80, w: 28, d: 26, h: 86, type: 'gold' },
+            { x: -95, z: -55, w: 22, d: 20, h: 58, type: 'terra' },
+            { x: -45, z: -45, w: 24, d: 22, h: 68, type: 'gold' },
 
-            // Block 2 (X: 10 to 80, Z: -150 to -70)
-            { x: 15, z: -125, w: 28, d: 26, h: 94, type: 'glass' },
-            { x: 65, z: -135, w: 24, d: 22, h: 76, type: 'stucco' },
+            // Block 2 (X: 10 to 80, Z: -150 to -70) - Charcoal & Gold
+            { x: 15, z: -125, w: 28, d: 26, h: 94, type: 'charcoal' },
+            { x: 65, z: -135, w: 24, d: 22, h: 76, type: 'gold' },
 
-            // Block 3 (X: 100 to 170, Z: -120 to -30)
-            { x: 135, z: -75, w: 32, d: 28, h: 82, type: 'glass' },
-            { x: 140, z: -25, w: 26, d: 24, h: 64, type: 'brick' },
+            // Block 3 (X: 100 to 170, Z: -120 to -30) - Terracotta & Gold
+            { x: 135, z: -75, w: 32, d: 28, h: 82, type: 'terra' },
+            { x: 140, z: -25, w: 26, d: 24, h: 64, type: 'gold' },
 
             // Block 4 (X: -110 to -30, Z: -260 to -170)
-            { x: -85, z: -220, w: 28, d: 26, h: 80, type: 'stucco' },
-            { x: -50, z: -245, w: 24, d: 22, h: 72, type: 'glass' },
+            { x: -85, z: -220, w: 28, d: 26, h: 80, type: 'gold' },
+            { x: -50, z: -245, w: 24, d: 22, h: 72, type: 'charcoal' },
 
             // Block 5 (X: 20 to 110, Z: -270 to -180)
-            { x: 55, z: -230, w: 30, d: 28, h: 90, type: 'glass' },
-            { x: 95, z: -245, w: 22, d: 24, h: 64, type: 'brick' },
+            { x: 55, z: -230, w: 30, d: 28, h: 90, type: 'gold' },
+            { x: 95, z: -245, w: 22, d: 24, h: 64, type: 'terra' },
 
             // Block 6 (X: 120 to 180, Z: -280 to -180)
-            { x: 150, z: -235, w: 28, d: 26, h: 74, type: 'stucco' },
+            { x: 150, z: -235, w: 28, d: 26, h: 74, type: 'gold' },
 
             // Block 7 (X: -120 to -30, Z: -420 to -310)
-            { x: -85, z: -370, w: 34, d: 30, h: 84, type: 'glass' },
-            { x: -45, z: -340, w: 24, d: 22, h: 62, type: 'brick' },
+            { x: -85, z: -370, w: 34, d: 30, h: 84, type: 'charcoal' },
+            { x: -45, z: -340, w: 24, d: 22, h: 62, type: 'terra' },
 
             // Block 8 (X: 10 to 100, Z: -430 to -320)
-            { x: 50, z: -380, w: 32, d: 28, h: 96, type: 'glass' },
-            { x: 85, z: -345, w: 24, d: 22, h: 68, type: 'stucco' },
+            { x: 50, z: -380, w: 32, d: 28, h: 96, type: 'gold' },
+            { x: 85, z: -345, w: 24, d: 22, h: 68, type: 'gold' },
 
             // Block 9 (X: 115 to 180, Z: -430 to -320)
-            { x: 145, z: -375, w: 30, d: 26, h: 78, type: 'glass' },
+            { x: 145, z: -375, w: 30, d: 26, h: 78, type: 'charcoal' },
 
-            // Mid-rise Downtown Storefront Blocks (Z: 0 to 150)
-            { x: -60, z: 20, w: 28, d: 26, h: 42, type: 'store' },
-            { x: -60, z: 65, w: 26, d: 24, h: 36, type: 'brick' },
+            // Mid-rise Streetlevel Storefront Blocks (Directly around player, matching photo!)
+            { x: -60, z: 20, w: 28, d: 26, h: 44, type: 'store' },
+            { x: -60, z: 65, w: 26, d: 24, h: 48, type: 'terra' },
             { x: 70, z: 20, w: 28, d: 26, h: 46, type: 'store' },
-            { x: 65, z: 65, w: 26, d: 24, h: 38, type: 'brick' },
+            { x: 65, z: 65, w: 26, d: 24, h: 52, type: 'gold' },
             { x: 145, z: 20, w: 26, d: 24, h: 44, type: 'store' }
         ];
 
@@ -749,8 +752,9 @@ class CyberBunkerWorld {
             for (let bz = -460; bz <= 90; bz += 44) {
                 if (Math.abs(bx - 40) < 28 && Math.abs(bz + 80) < 28) continue;
                 if (Math.abs(bx + 40) < 28 && Math.abs(bz + 180) < 28) continue;
+                if (Math.abs(bx - 20) < 28 && Math.abs(bz + 90) < 28) continue;
 
-                const types = ['glass', 'brick', 'stucco', 'store'];
+                const types = ['gold', 'terra', 'charcoal', 'store'];
                 const curType = types[Math.floor(Math.random() * types.length)];
                 const h = 34 + Math.floor(Math.random() * 48);
 
@@ -765,7 +769,7 @@ class CyberBunkerWorld {
             }
         }
 
-        // Residential Brick Brownstones in the South District (Z = 180 to 520)
+        // Residential Terracotta Brick Brownstones in the South District (Z = 180 to 520)
         for (let rx = -440; rx <= 140; rx += 65) {
             for (let rz = 220; rz <= 500; rz += 75) {
                 const rh = 18 + Math.floor(Math.random() * 16);
@@ -775,44 +779,42 @@ class CyberBunkerWorld {
                     w: 48,
                     d: 52,
                     h: rh,
-                    type: (rx % 2 === 0 ? 'brick' : 'stucco')
+                    type: (rx % 2 === 0 ? 'terra' : 'gold')
                 });
             }
         }
 
         buildingDefinitions.forEach(b => {
             let facadeMat;
-            if (b.type === 'glass') facadeMat = matGlass;
-            else if (b.type === 'brick') facadeMat = matBrick;
+            if (b.type === 'gold') facadeMat = matGold;
+            else if (b.type === 'terra') facadeMat = matTerra;
             else if (b.type === 'store') facadeMat = matStore;
-            else facadeMat = matStucco;
+            else facadeMat = matCharcoal;
 
             const bGroup = new THREE.Group();
             bGroup.position.set(b.x, 0, b.z);
 
-            // Main Building Box with Procedural Textured Facade
             const mesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), facadeMat);
             mesh.position.y = b.h / 2;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             bGroup.add(mesh);
 
-            // Roof with Gravel Texture & Parapet Ledge
+            // Roof & Parapet
             const roof = new THREE.Mesh(new THREE.BoxGeometry(b.w, 0.6, b.d), matRoof);
             roof.position.y = b.h + 0.3;
             bGroup.add(roof);
 
             const parapet = new THREE.Mesh(
                 new THREE.BoxGeometry(b.w + 0.8, 1.2, b.d + 0.8),
-                new THREE.MeshStandardMaterial({ color: 0x3d434d })
+                new THREE.MeshStandardMaterial({ color: 0x3d352b })
             );
             parapet.position.y = b.h + 0.6;
             parapet.castShadow = true;
             bGroup.add(parapet);
 
-            // Rooftop AC units, Vents & Water Tanks
+            // Rooftop AC and Water Tanks
             if (b.h > 50) {
-                // AC Chiller boxes
                 const ac = new THREE.Mesh(
                     new THREE.BoxGeometry(b.w * 0.35, 2.5, b.d * 0.3),
                     new THREE.MeshStandardMaterial({ color: 0x5a6373, metalness: 0.8, roughness: 0.3 })
@@ -820,7 +822,6 @@ class CyberBunkerWorld {
                 ac.position.set(b.w * 0.15, b.h + 1.8, -b.d * 0.15);
                 bGroup.add(ac);
 
-                // Water tank
                 const tank = new THREE.Mesh(
                     new THREE.CylinderGeometry(2.2, 2.2, 4.2, 12),
                     new THREE.MeshStandardMaterial({ color: 0x594232, roughness: 0.9 })
@@ -830,49 +831,78 @@ class CyberBunkerWorld {
             }
 
             this.scene.add(bGroup);
+
+            // Register Solid Bounding Box Collider (Prevents player walking through wall!)
+            this.addBoxCollider(b.x, b.z, b.w, b.d);
         });
     }
 
-    buildArtDecoSpireTower(x, z, brickMat, glassMat) {
-        // 160m Art Deco Skyscraper with Spire & Beacon
+    buildFlatironLandmarkBuilding() {
+        // Triangular Flatiron-Style Landmark Skyscraper (Directly from Photo Vista!)
+        // Positioned at X = 20, Z = -95
+        const g = new THREE.Group();
+        g.position.set(20, 0, -95);
+
+        const stoneMat = new THREE.MeshStandardMaterial({ map: this.textures.goldenSandstone, roughness: 0.7 });
+
+        // Wedge / Triangular Tier 1
+        const t1 = new THREE.Mesh(new THREE.BoxGeometry(24, 52, 20), stoneMat);
+        t1.position.y = 26;
+        t1.castShadow = true;
+        t1.receiveShadow = true;
+        g.add(t1);
+
+        // Stepped Back Crown Tier 2
+        const t2 = new THREE.Mesh(new THREE.BoxGeometry(18, 22, 16), stoneMat);
+        t2.position.y = 63;
+        t2.castShadow = true;
+        g.add(t2);
+
+        // Decorative Cornices
+        const cornice = new THREE.Mesh(new THREE.BoxGeometry(25.5, 1.6, 21.5), stoneMat);
+        cornice.position.y = 52.8;
+        g.add(cornice);
+
+        const cornice2 = new THREE.Mesh(new THREE.BoxGeometry(19.5, 1.4, 17.5), stoneMat);
+        cornice2.position.y = 74.7;
+        g.add(cornice2);
+
+        this.scene.add(g);
+        this.addBoxCollider(20, -95, 24, 20); // Solid collider
+    }
+
+    buildArtDecoSpireTower(x, z, goldMat, charcoalMat) {
         const g = new THREE.Group();
         g.position.set(x, 0, z);
 
-        const stoneMat = new THREE.MeshStandardMaterial({ map: this.textures.brickFacade, roughness: 0.65 });
         const chromeMat = new THREE.MeshStandardMaterial({ color: 0xd8dde6, metalness: 0.95, roughness: 0.1 });
 
-        // Tier 1 Base
-        const base = new THREE.Mesh(new THREE.BoxGeometry(36, 24, 36), stoneMat);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(36, 24, 36), goldMat);
         base.position.y = 12;
         base.castShadow = true;
         g.add(base);
 
-        // Tier 2 Shaft
-        const t2 = new THREE.Mesh(new THREE.BoxGeometry(28, 46, 28), glassMat);
+        const t2 = new THREE.Mesh(new THREE.BoxGeometry(28, 46, 28), charcoalMat);
         t2.position.y = 47;
         t2.castShadow = true;
         g.add(t2);
 
-        // Tier 3 Shaft
-        const t3 = new THREE.Mesh(new THREE.BoxGeometry(22, 42, 22), glassMat);
+        const t3 = new THREE.Mesh(new THREE.BoxGeometry(22, 42, 22), charcoalMat);
         t3.position.y = 91;
         t3.castShadow = true;
         g.add(t3);
 
-        // Tier 4 Crown
-        const t4 = new THREE.Mesh(new THREE.BoxGeometry(16, 26, 16), stoneMat);
+        const t4 = new THREE.Mesh(new THREE.BoxGeometry(16, 26, 16), goldMat);
         t4.position.y = 125;
         t4.castShadow = true;
         g.add(t4);
 
-        // Radiator Crown
         const crown = new THREE.Mesh(new THREE.ConeGeometry(9, 14, 4), chromeMat);
         crown.rotateY(Math.PI / 4);
         crown.position.y = 145;
         crown.castShadow = true;
         g.add(crown);
 
-        // 160m Spire & Beacon
         const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 1.2, 24, 8), chromeMat);
         spire.position.y = 164;
         g.add(spire);
@@ -882,10 +912,10 @@ class CyberBunkerWorld {
         g.add(beacon);
 
         this.scene.add(g);
+        this.addBoxCollider(x, z, 36, 36); // Solid collider
     }
 
     buildCrystalMegaTower(x, z, glassMat) {
-        // 115m Faceted Glass Mega-Tower
         const g = new THREE.Group();
         g.position.set(x, 0, z);
 
@@ -896,34 +926,33 @@ class CyberBunkerWorld {
         g.add(tower);
 
         this.scene.add(g);
+        this.addBoxCollider(x, z, 26, 26); // Solid collider
     }
 
     buildCentralParkDistrict() {
-        // 340m x 500m Central Park (X = -480 to -160, Z = -250 to 250)
         const parkGroup = new THREE.Group();
         parkGroup.position.set(-320, 0, 0);
 
-        // Lush Green Grass Turf
         const grassMat = new THREE.MeshStandardMaterial({ color: 0x3d8235, roughness: 0.9 });
         const turf = new THREE.Mesh(new THREE.BoxGeometry(310, 0.4, 490), grassMat);
         turf.position.y = 0.2;
         turf.receiveShadow = true;
         parkGroup.add(turf);
 
-        // Central Park Lake
         const lakeMat = new THREE.MeshStandardMaterial({ color: 0x1b4d3e, roughness: 0.15, metalness: 0.75 });
         const lake = new THREE.Mesh(new THREE.CylinderGeometry(36, 42, 0.6, 24), lakeMat);
         lake.position.set(0, 0.3, 0);
         parkGroup.add(lake);
 
-        // Paved Walking Paths
         const pathMat = new THREE.MeshStandardMaterial({ color: 0x8f867a, roughness: 0.85 });
         const mainPath = new THREE.Mesh(new THREE.BoxGeometry(12, 0.45, 480), pathMat);
         mainPath.position.set(0, 0.23, 0);
+        mainPath.receiveShadow = true;
         parkGroup.add(mainPath);
 
         const crossPath = new THREE.Mesh(new THREE.BoxGeometry(300, 0.45, 10), pathMat);
         crossPath.position.set(0, 0.23, 0);
+        crossPath.receiveShadow = true;
         parkGroup.add(crossPath);
 
         // 120+ Park Trees
@@ -956,51 +985,64 @@ class CyberBunkerWorld {
         this.scene.add(parkGroup);
     }
 
-    buildStreetPropsAndFoliage() {
-        // Victorian Streetlamps along Sidewalks
-        const lampMat = new THREE.MeshStandardMaterial({ color: 0x222830, metalness: 0.85, roughness: 0.3 });
-        const globeMat = new THREE.MeshStandardMaterial({ color: 0xfffae0, emissive: 0xffe899, emissiveIntensity: 0.6 });
+    buildStreetPropsAndLighting() {
+        // Modern Cantilever Streetlights (Matching Photo's Sleek Streetlamps)
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x8a929e, metalness: 0.9, roughness: 0.2 });
+        const lampHeadMat = new THREE.MeshStandardMaterial({ color: 0x3d434d, metalness: 0.8 });
+        const lightGlowMat = new THREE.MeshStandardMaterial({ color: 0xfff2b8, emissive: 0xffe680, emissiveIntensity: 0.8 });
 
         const lampPositions = [
-            { x: 10, z: -10 }, { x: 10, z: 20 }, { x: 10, z: -40 },
-            { x: -10, z: -10 }, { x: -10, z: 20 }, { x: -10, z: -40 },
-            { x: 188, z: -10 }, { x: 188, z: 40 }, { x: 188, z: -60 },
-            { x: 212, z: -10 }, { x: 212, z: 40 }, { x: 212, z: -60 }
+            { x: 11, z: -10, rot: 0 }, { x: 11, z: 25, rot: 0 }, { x: 11, z: -45, rot: 0 },
+            { x: -11, z: -10, rot: Math.PI }, { x: -11, z: 25, rot: Math.PI }, { x: -11, z: -45, rot: Math.PI },
+            { x: 188, z: -10, rot: 0 }, { x: 188, z: 40, rot: 0 }, { x: 188, z: -60, rot: 0 }
         ];
 
         lampPositions.forEach(p => {
             const lamp = new THREE.Group();
             lamp.position.set(p.x, 0, p.z);
+            lamp.rotation.y = p.rot;
 
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.22, 5.2, 8), lampMat);
-            post.position.y = 2.6;
-            post.castShadow = true;
-            lamp.add(post);
+            // Slender brushed metal pole
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 6.2, 8), poleMat);
+            pole.position.y = 3.1;
+            pole.castShadow = true;
+            lamp.add(pole);
 
-            const globe = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), globeMat);
-            globe.position.set(0, 5.2, 0);
-            lamp.add(globe);
+            // Cantilever horizontal arm
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.2), poleMat);
+            arm.position.set(0.7, 6.1, 0);
+            lamp.add(arm);
+
+            // Rectangular modern lamp head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.22, 0.45), lampHeadMat);
+            head.position.set(1.4, 6.1, 0);
+            lamp.add(head);
+
+            // Downward glowing light panel
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.05, 0.35), lightGlowMat);
+            panel.position.set(1.4, 5.95, 0);
+            lamp.add(panel);
 
             this.scene.add(lamp);
         });
 
-        // Fire Hydrants
-        const hydrantMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.4 });
-        [-8, 12, 192].forEach(hx => {
-            [-15, 35].forEach(hz => {
-                const hyd = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.8, 8), hydrantMat);
-                hyd.position.set(hx, 0.4, hz);
-                hyd.castShadow = true;
-                this.scene.add(hyd);
-            });
+        // Dark Street Bollards (Matching Photo's Foreground Bollards)
+        const bollardMat = new THREE.MeshStandardMaterial({ color: 0x1f2329, metalness: 0.7, roughness: 0.3 });
+        [-9.5, 9.5].forEach(bx => {
+            for (let bz = -30; bz <= 30; bz += 15) {
+                const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 1.1, 8), bollardMat);
+                bollard.position.set(bx, 0.55, bz);
+                bollard.castShadow = true;
+                this.scene.add(bollard);
+            }
         });
 
-        // Trees along Sidewalks
+        // Street Trees along Sidewalks
         const treeMat = new THREE.MeshStandardMaterial({ color: 0x2e752e, roughness: 0.7 });
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3625, roughness: 0.9 });
 
         [-12, 12].forEach(tx => {
-            for (let tz = -80; tz <= 80; tz += 22) {
+            for (let tz = -80; tz <= 80; tz += 24) {
                 const tree = new THREE.Group();
                 tree.position.set(tx, 0, tz);
 
@@ -1041,6 +1083,7 @@ class CyberBunkerWorld {
             mesh.position.set(c.x, 0, c.z);
             mesh.rotation.y = c.rot;
             this.scene.add(mesh);
+            this.addBoxCollider(c.x, c.z, 2.4, 5.0); // Solid car collider
         });
     }
 
@@ -1238,7 +1281,6 @@ class CyberBunkerWorld {
     update(delta, playerPos, totalScore) {
         const time = performance.now() * 0.001;
 
-        // Drift clouds
         this.clouds.forEach(cl => {
             cl.position.x += delta * 4.5;
             if (cl.position.x > 650) {
@@ -1246,13 +1288,11 @@ class CyberBunkerWorld {
             }
         });
 
-        // Police flashing emergency lights
         this.policeLights.forEach(pl => {
             const isRed = Math.floor(time * 6) % 2 === 0;
             pl.color.setHex(isRed ? 0xff0022 : 0x0066ff);
         });
 
-        // Terminals pulse
         this.terminals.forEach(t => {
             if (t.holo && t.holo.material && t.holo.material.emissiveIntensity) {
                 t.holo.material.emissiveIntensity = 0.8 + Math.sin(time * 6) * 0.15;
