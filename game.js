@@ -234,28 +234,40 @@ class CyberCTFGame {
         const scale = (size - 16) / 200; // 200m metropolis world map scale
 
         // Clear background
-        ctx.fillStyle = 'rgba(10, 14, 24, 0.92)';
+        ctx.fillStyle = 'rgba(18, 24, 36, 0.95)';
         ctx.fillRect(0, 0, size, size);
 
-        // City Blocks (Dark slate)
-        ctx.fillStyle = '#121824';
-        ctx.fillRect(4, 4, size - 8, size - 8);
+        // North Coastal Water Bay (Top edge)
+        ctx.fillStyle = '#1a789a';
+        ctx.fillRect(4, 4, size - 8, 14);
+
+        // Steel Arch Bridge Marker at top
+        ctx.strokeStyle = '#8a95a5';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(center - 24, 11);
+        ctx.lineTo(center + 24, 11);
+        ctx.stroke();
+
+        // City Blocks (Warm slate)
+        ctx.fillStyle = '#161c28';
+        ctx.fillRect(4, 18, size - 8, size - 22);
 
         // Road network (Asphalt Gray)
-        const mainRoadW = 18 * scale;
+        const mainRoadW = 20 * scale;
         const secRoadW = 14 * scale;
 
-        ctx.fillStyle = '#252d3d';
+        ctx.fillStyle = '#3a4250';
 
         // Main Avenue (North-South)
-        ctx.fillRect(center - mainRoadW / 2, 4, mainRoadW, size - 8);
+        ctx.fillRect(center - mainRoadW / 2, 18, mainRoadW, size - 22);
         // Main Boulevard (East-West)
         ctx.fillRect(4, center - mainRoadW / 2, size - 8, mainRoadW);
 
         // Secondary Avenues (East/West grid lines at x = ±60m)
         [-60, 60].forEach(gx => {
             const rx = center + gx * scale;
-            ctx.fillRect(rx - secRoadW / 2, 4, secRoadW, size - 8);
+            ctx.fillRect(rx - secRoadW / 2, 18, secRoadW, size - 22);
         });
 
         // Secondary Streets (North/South grid lines at z = ±60m)
@@ -264,17 +276,20 @@ class CyberCTFGame {
             ctx.fillRect(4, rz - secRoadW / 2, size - 8, secRoadW);
         });
 
+        // Green Landscaped Palm Median Strip (Center Avenue)
+        ctx.fillStyle = '#2e7d32';
+        ctx.fillRect(center - 1.5, 18, 3, size - 22);
+
         // Road double yellow center lines
         ctx.strokeStyle = '#f5b700';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        // Main axis lines
-        ctx.moveTo(center, 4); ctx.lineTo(center, size - 4);
+        // E-W Boulevard center line
         ctx.moveTo(4, center); ctx.lineTo(size - 4, center);
         // Secondary road center lines
         [-60, 60].forEach(gx => {
             const rx = center + gx * scale;
-            ctx.moveTo(rx, 4); ctx.lineTo(rx, size - 4);
+            ctx.moveTo(rx, 18); ctx.lineTo(rx, size - 4);
         });
         [-60, 60].forEach(gz => {
             const rz = center + gz * scale;
