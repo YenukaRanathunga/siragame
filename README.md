@@ -1,0 +1,67 @@
+# 🎮 CYBER-OPS 3D // Capture The Flag Web Platform
+
+A 3D Cyberpunk Capture The Flag (CTF) game platform built for the browser. Players control a 3D hacker operative exploring an underground cyber facility, approaching interactive workstations, solving real cybersecurity challenges, submitting flags, and climbing the leaderboard.
+
+---
+
+## ⚡ Quick Start (Play Locally)
+
+### Option 1: Double-Click Launcher (Recommended)
+Just double click **`run.bat`** in this folder! It will start the local server and automatically open your default browser at `http://localhost:8080`.
+
+### Option 2: PowerShell
+Open PowerShell in this directory and run:
+```powershell
+.\server.ps1
+```
+
+### Option 3: VS Code / Any Static Server
+You can open this folder in VS Code with "Live Server" extension, or run:
+```bash
+npx serve .
+# or
+python -m http.server 8080
+```
+
+---
+
+## 🕹️ Controls (3D Mode)
+
+| Key | Action |
+| --- | --- |
+| **W, A, S, D** / Arrows | Walk & navigate around the cyberpunk bunker |
+| **Shift** | Sprint (High speed locomotion) |
+| **Spacebar** | Jump |
+| **Mouse Drag** | 360° Camera orbit / Scroll to zoom |
+| **Key E** | Access / Hack terminal when close to a station |
+| **Key V** | Toggle between **3rd-Person** and **1st-Person** camera views |
+| **Escape** | Close open terminal window |
+
+---
+
+## 🌐 Dual View Modes
+
+1. **🎮 3D World Mode**: An interactive 3D virtual bunker with animated hacker character, proximity sensors, laser defenses, and radar minimap.
+2. **📊 Web Dashboard Mode**: Traditional CTF web portal view (like HackTheBox / CTFd) with challenge cards, live statistics, and player leaderboard.
+
+---
+
+## 🎯 Challenges Included
+
+| Station | Category | Points | Description |
+| --- | --- | --- | --- |
+| **Station 01** | Web Exploitation | 100 PTS | SQL Injection authentication bypass (`admin' OR '1'='1' --`) |
+| **Station 02** | Cryptography | 150 PTS | Multi-layer ROT13 + Base64 transmission cipher |
+| **Station 03** | Linux / PrivEsc | 200 PTS | Interactive in-browser Bash shell with `sudo -l` inspection |
+| **Station 04** | Digital Forensics | 250 PTS | Network packet stream inspection & hex editor analysis |
+| **Station 05** | Reverse Engineering | 300 PTS | Decompiled serial license verification algorithm |
+| **Station 06** | Master Mainframe | 500 PTS | Central boss supercomputer. Laser barrier unlocks at 500+ PTS! |
+
+---
+
+## 🚀 How to Deploy Online (Free)
+
+Since this project uses pure HTML5, CSS3, JavaScript, and WebGL:
+* **GitHub Pages**: Push this directory to a GitHub repository, go to `Settings > Pages`, and select `main` branch.
+* **Vercel**: Run `vercel` or import the GitHub repo on vercel.com.
+* **Netlify**: Drag-and-drop this folder into Netlify Drop (app.netlify.com/drop).

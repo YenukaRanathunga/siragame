@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-OPS 3D // Capture The Flag Web Platform</title>
+    <!-- Google Fonts for Cyberpunk & Terminal Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- TOP CYBER NAVIGATION BAR -->
+    <header class="cyber-header">
+        <div class="header-left">
+            <div class="cyber-logo">
+                <span class="glitch-text" data-text="MR. ROBOT 3D">MR. ROBOT 3D</span>
+                <span class="logo-sub">FSOCIETY // HELLO, FRIEND.</span>
+            </div>
+            <div class="view-switch-group">
+                <button id="btn-mode-3d" class="nav-tab active">🎮 3D WORLD</button>
+                <button id="btn-mode-dash" class="nav-tab">📊 WEB DASHBOARD</button>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="stat-pill">
+                <span class="stat-label">SCORE:</span>
+                <span id="hud-score" class="stat-val cyber-cyan">0</span>
+                <span class="stat-unit">PTS</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">SOLVED:</span>
+                <span id="hud-solved" class="stat-val cyber-green">0/6</span>
+            </div>
+            <button id="btn-toggle-audio" class="cyber-btn sm">🔊 SOUND: ON</button>
+            <button id="btn-open-help" class="cyber-btn sm">❓ HELP</button>
+        </div>
+    </header>
+
+    <!-- 1. 3D GAME MODE VIEW -->
+    <main id="game-container-3d" class="game-viewport">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Crosshair in center -->
+        <div class="crosshair-indicator"></div>
+
+        <!-- Radar Minimap Overlay -->
+        <div class="radar-wrapper">
+            <div class="radar-header">
+                <span>FACILITY RADAR</span>
+                <span class="radar-live-dot"></span>
+            </div>
+            <canvas id="radar-canvas" width="150" height="150"></canvas>
+            <div class="radar-legend">
+                <span><span class="dot cyan"></span> You</span>
+                <span><span class="dot pink"></span> Terminal</span>
+                <span><span class="dot green"></span> Cleared</span>
+            </div>
+        </div>
+
+        <!-- Controls Helper Pill -->
+        <div class="controls-pill">
+            <span><strong>WASD</strong> Move</span>
+            <span><strong>Shift</strong> Sprint</span>
+            <span><strong>Space</strong> Jump</span>
+            <span><strong>Mouse</strong> Look</span>
+            <span><strong>E</strong> Hack Terminal</span>
+            <span><strong>V</strong> 1st/3rd View</span>
+        </div>
+
+        <!-- Dynamic Proximity Prompt -->
+        <div id="interaction-prompt" class="interaction-prompt hidden">
+            <div class="prompt-key">E</div>
+            <div class="prompt-text">
+                <span class="prompt-action">ACCESS TERMINAL</span>
+                <span class="prompt-station">Station</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- 2. WEB DASHBOARD VIEW (CLASSIC CTF WEB PORTAL) -->
+    <section id="dashboard-container" class="dashboard-viewport hidden">
+        <div class="dash-hero">
+            <h1 class="dash-title">CYBER DEFENSE INFILTRATION GRID</h1>
+            <p class="dash-subtitle">Neutralize facility subsystems, exploit vulnerable protocols, decrypt intercepted ciphers, and override the Omega Supercomputer.</p>
+            
+            <div class="dash-stats-row">
+                <div class="dash-stat-card">
+                    <span class="label">TOTAL SCORE</span>
+                    <span id="dash-total-score" class="num cyber-cyan">0</span>
+                    <span class="sub">Points Accumulated</span>
+                </div>
+                <div class="dash-stat-card">
+                    <span class="label">SYSTEMS OVERRIDDEN</span>
+                    <span id="dash-solved-count" class="num cyber-green">0/6</span>
+                    <span class="sub">Completed Stations</span>
+                </div>
+                <div class="dash-stat-card">
+                    <span class="label">CLEARANCE STATUS</span>
+                    <span class="num cyber-yellow">AGENT LEVEL 1</span>
+                    <span class="sub">Requires 500 PTS for Omega Core</span>
+                </div>
+                <div class="dash-stat-card">
+                    <span class="label">WORLD SIMULATOR</span>
+                    <button class="cyber-btn primary mt-1" onclick="document.getElementById('btn-mode-3d').click();">
+                        ENTER 3D BUNKER →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenge Cards Grid -->
+        <div class="dash-section-header">
+            <h2>ACTIVE CHALLENGE STATIONS</h2>
+            <span class="text-dim">Click any station to analyze intel and submit flag tokens</span>
+        </div>
+
+        <div id="dash-challenges-grid" class="dash-grid">
+            <!-- Dynamically populated by game.js -->
+        </div>
+
+        <!-- Live Hacker Leaderboard -->
+        <div class="dash-section-header mt-5">
+            <h2>FACILITY LEADERBOARD // TOP OPERATIVES</h2>
+        </div>
+        <div class="leaderboard-table-wrapper">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>RANK</th>
+                        <th>OPERATIVE HANDLE</th>
+                        <th>SECTOR</th>
+                        <th>SOLVED</th>
+                        <th>SCORE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="rank-1">
+                        <td><span class="rank-badge gold">#1</span></td>
+                        <td><strong>ZeroCool_99</strong></td>
+                        <td>BlackHat Division</td>
+                        <td>6 / 6</td>
+                        <td><span class="cyber-cyan font-bold">1500 PTS</span></td>
+                    </tr>
+                    <tr class="rank-2">
+                        <td><span class="rank-badge silver">#2</span></td>
+                        <td><strong>AcidBurn</strong></td>
+                        <td>Crypto Analysts</td>
+                        <td>5 / 6</td>
+                        <td><span class="cyber-cyan font-bold">1000 PTS</span></td>
+                    </tr>
+                    <tr class="rank-3">
+                        <td><span class="rank-badge bronze">#3</span></td>
+                        <td><strong>GhostInTheShell</strong></td>
+                        <td>Exploit Ops</td>
+                        <td>4 / 6</td>
+                        <td><span class="cyber-cyan font-bold">700 PTS</span></td>
+                    </tr>
+                    <tr class="rank-you">
+                        <td><span class="rank-badge you">#4</span></td>
+                        <td><strong>YOU (CyberAgent)</strong></td>
+                        <td>Infiltrator Unit</td>
+                        <td id="table-solved">0 / 6</td>
+                        <td><span id="table-score" class="cyber-green font-bold">0 PTS</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 3. IN-GAME RETRO HACKER TERMINAL MODAL -->
+    <div id="terminal-modal" class="terminal-overlay hidden">
+        <div class="crt-screen">
+            <div class="scanlines"></div>
+            <div class="crt-bezel">
+                <div class="crt-topbar">
+                    <div class="topbar-title">
+                        <span class="status-indicator"></span>
+                        <span id="terminal-title">STATION TERMINAL</span>
+                    </div>
+                    <div class="topbar-actions">
+                        <span id="terminal-category-badge" class="badge">CATEGORY</span>
+                        <span id="terminal-points-badge" class="badge points">+100 PTS</span>
+                        <button id="btn-close-terminal" class="close-x-btn">✕</button>
+                    </div>
+                </div>
+
+                <!-- Terminal Navigation Tabs -->
+                <div class="terminal-tabs">
+                    <button class="terminal-tab-btn active" data-tab="briefing">1. MISSION INTEL</button>
+                    <button class="terminal-tab-btn" data-tab="target">2. INTERACTIVE TARGET</button>
+                    <button class="terminal-tab-btn" data-tab="hints">3. DECRYPTOR HINT</button>
+                </div>
+
+                <!-- Tab 1: Briefing -->
+                <div id="tab-briefing" class="terminal-tab-body">
+                    <div id="terminal-briefing-content" class="briefing-box"></div>
+                </div>
+
+                <!-- Tab 2: Interactive Target Console -->
+                <div id="tab-target" class="terminal-tab-body hidden">
+                    <div id="terminal-interactive-container"></div>
+                </div>
+
+                <!-- Tab 3: Hints -->
+                <div id="tab-hints" class="terminal-tab-body hidden">
+                    <div class="hint-box">
+                        <h4>[ ENCRYPTED ADVISORY NOTE ]</h4>
+                        <div id="terminal-hint-content"></div>
+                    </div>
+                </div>
+
+                <!-- Flag Submission Bar (Always visible at bottom of modal) -->
+                <div class="terminal-flag-bar">
+                    <label for="terminal-flag-input">FLAG TOKEN:</label>
+                    <input type="text" id="terminal-flag-input" placeholder="CTF{flag_token_here}" autocomplete="off" spellcheck="false">
+                    <button id="btn-submit-flag" class="cyber-btn primary">TRANSMIT FLAG</button>
+                </div>
+                <div id="terminal-flag-result" class="flag-result-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. HELP & CONTROLS MODAL -->
+    <div id="help-modal" class="terminal-overlay hidden">
+        <div class="help-box">
+            <div class="help-header">
+                <h3>MISSION FIELD MANUAL // AGENT GUIDE</h3>
+                <button id="btn-close-help" class="close-x-btn">✕</button>
+            </div>
+            <div class="help-body">
+                <h4>🕹️ HOW TO PLAY (3D MODE):</h4>
+                <ul>
+                    <li><strong>WASD / Arrow Keys:</strong> Walk & navigate around the cyberpunk bunker.</li>
+                    <li><strong>Shift:</strong> Sprint for high-speed locomotion.</li>
+                    <li><strong>Spacebar:</strong> Jump over conduits or obstacles.</li>
+                    <li><strong>Mouse Look / Drag:</strong> Rotate 360° camera orbit. Scroll to zoom.</li>
+                    <li><strong>Key E:</strong> Walk close to any glowing workstation and press <code>E</code> to hack into the terminal.</li>
+                    <li><strong>Key V:</strong> Switch between Third-Person and First-Person camera views!</li>
+                </ul>
+
+                <h4 class="mt-3">🎯 CTF CHALLENGE GOALS:</h4>
+                <p>There are 6 stations inside the bunker:</p>
+                <ol>
+                    <li><strong>Web Exploitation:</strong> SQL injection authentication bypass.</li>
+                    <li><strong>Cryptography:</strong> Multi-layer ROT13 and Base64 cipher decoder.</li>
+                    <li><strong>Linux PrivEsc:</strong> Fully simulated interactive bash shell.</li>
+                    <li><strong>Digital Forensics:</strong> Inspect raw network packet hex streams.</li>
+                    <li><strong>Reverse Engineering:</strong> Decompiled mathematical serial keygen puzzle.</li>
+                    <li><strong>Omega Supercomputer:</strong> Central boss vault. Unlocks once you acquire 500+ PTS!</li>
+                </ol>
+
+                <h4 class="mt-3">🌐 WEB DASHBOARD:</h4>
+                <p>Use the <strong>"📊 WEB DASHBOARD"</strong> tab in the top navigation bar to view all challenges, check the scoreboard, and inspect challenges in traditional web portal format!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local Libraries (Zero Network Dependencies) -->
+    <script src="three.min.js"></script>
+    <script src="confetti.browser.min.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="audio.js"></script>
+    <script src="challenges.js"></script>
+    <script src="character.js"></script>
+    <script src="world.js"></script>
+    <script src="terminal-ui.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
