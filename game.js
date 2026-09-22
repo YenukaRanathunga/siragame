@@ -237,43 +237,56 @@ class CyberCTFGame {
         ctx.fillStyle = 'rgba(6, 12, 22, 0.85)';
         ctx.fillRect(0, 0, size, size);
 
-        // Bunker outer boundary
-        ctx.strokeStyle = '#00f0ff';
+        // GTA Style Map Background & Road Network
+        const rw = 24 * scale; // Road width on minimap
+
+        // 4 Corner Building Blocks (Dark slate)
+        ctx.fillStyle = '#111724';
+        ctx.fillRect(8, 8, center - rw/2 - 8, center - rw/2 - 8); // NW
+        ctx.fillRect(center + rw/2, 8, center - rw/2 - 8, center - rw/2 - 8); // NE
+        ctx.fillRect(8, center + rw/2, center - rw/2 - 8, center - rw/2 - 8); // SW
+        ctx.fillRect(center + rw/2, center + rw/2, center - rw/2 - 8, center - rw/2 - 8); // SE
+
+        // Roads (Asphalt Gray)
+        ctx.fillStyle = '#2c3545';
+        ctx.fillRect(center - rw/2, 8, rw, size - 16); // North-South Avenue
+        ctx.fillRect(8, center - rw/2, size - 16, rw); // East-West Street
+
+        // Road double yellow center line
+        ctx.strokeStyle = '#f5b700';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(center, 8); ctx.lineTo(center, center - rw/2);
+        ctx.moveTo(center, center + rw/2); ctx.lineTo(center, size - 8);
+        ctx.moveTo(8, center); ctx.lineTo(center - rw/2, center);
+        ctx.moveTo(center + rw/2, center); ctx.lineTo(size - 8, center);
+        ctx.stroke();
+
+        // Outer Town Boundary
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(8, 8, size - 16, size - 16);
 
-        // Grid lines on radar
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(center, 8);
-        ctx.lineTo(center, size - 8);
-        ctx.moveTo(8, center);
-        ctx.lineTo(size - 8, center);
-        ctx.stroke();
-
-        // Draw Terminals
+        // Draw Infiltration Targets
         const challenges = window.challengeManager.challenges;
         challenges.forEach(ch => {
             const mapX = center + ch.pos.x * scale;
             const mapY = center + ch.pos.z * scale;
 
             ctx.beginPath();
-            ctx.arc(mapX, mapY, 4, 0, Math.PI * 2);
-            if (ch.solved) {
-                ctx.fillStyle = '#00ff66';
-            } else {
-                ctx.fillStyle = ch.color || '#ff007f';
-            }
+            ctx.arc(mapX, mapY, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = ch.solved ? '#00ff66' : (ch.color || '#ff007f');
+            ctx.shadowColor = ch.solved ? '#00ff66' : '#ff007f';
+            ctx.shadowBlur = 4;
             ctx.fill();
+            ctx.shadowBlur = 0;
 
-            // Ring around terminal
-            ctx.strokeStyle = ch.solved ? '#00ff66' : 'rgba(255, 255, 255, 0.5)';
+            ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1;
             ctx.stroke();
         });
 
-        // Draw Player Arrow
+        // Draw Player Arrow (GTA V style)
         const playerX = center + this.player.position.x * scale;
         const playerY = center + this.player.position.z * scale;
         const angle = this.player.rotation;
@@ -282,16 +295,16 @@ class CyberCTFGame {
         ctx.translate(playerX, playerY);
         ctx.rotate(angle);
 
-        // Draw triangle pointer
         ctx.beginPath();
-        ctx.moveTo(0, 7);
-        ctx.lineTo(-4, -5);
-        ctx.lineTo(4, -5);
+        ctx.moveTo(0, 8);
+        ctx.lineTo(-4.5, -6);
+        ctx.lineTo(4.5, -6);
         ctx.closePath();
         ctx.fillStyle = '#00f0ff';
         ctx.shadowColor = '#00f0ff';
         ctx.shadowBlur = 6;
         ctx.fill();
+        ctx.shadowBlur = 0;
 
         ctx.restore();
     }
