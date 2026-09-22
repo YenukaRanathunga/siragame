@@ -17,9 +17,9 @@ class CyberCTFGame {
     }
 
     init() {
-        // 1. Three.js Scene & Camera
+        // 1. Three.js Scene & Camera (Kilometer Scale)
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3500);
 
         // 2. WebGL Renderer
         const canvas = document.getElementById('game-canvas');
@@ -231,73 +231,84 @@ class CyberCTFGame {
         const ctx = canvas.getContext('2d');
         const size = canvas.width;
         const center = size / 2;
-        const scale = (size - 16) / 200; // 200m metropolis world map scale
+        const scale = (size - 16) / 1200; // 1200m (1.2km) metropolis scale
 
-        // Clear background
-        ctx.fillStyle = 'rgba(18, 24, 36, 0.95)';
+        // Clear background (Dark urban base)
+        ctx.fillStyle = 'rgba(14, 18, 26, 0.95)';
         ctx.fillRect(0, 0, size, size);
 
-        // North Coastal Water Bay (Top edge)
-        ctx.fillStyle = '#1a789a';
-        ctx.fillRect(4, 4, size - 8, 14);
+        // 1. Eastern Ocean Harbor Bay
+        const oceanX = center + 220 * scale;
+        ctx.fillStyle = '#166986';
+        ctx.fillRect(oceanX, 4, size - 4 - oceanX, size - 8);
 
-        // Steel Arch Bridge Marker at top
-        ctx.strokeStyle = '#8a95a5';
-        ctx.lineWidth = 2.5;
+        // 2. Walkable Finger Piers extending into Ocean
+        const pierZs = [-350, -210, -70, 70, 210, 350];
+        ctx.fillStyle = '#6b7280';
+        pierZs.forEach((pz, idx) => {
+            const py = center + pz * scale;
+            const pw = 95 * scale;
+            const ph = Math.max(3, 16 * scale);
+            ctx.fillRect(oceanX, py - ph/2, pw, ph);
+
+            // Docked Ships on Pier 2 (Cruise Liner) & Pier 4 (Cargo Ship)
+            if (idx === 1) { // Cruise Liner at Pier 2
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(oceanX + 15 * scale, py + ph/2 + 1, 110 * scale, 12 * scale);
+                ctx.fillStyle = '#6b7280'; // restore
+            } else if (idx === 3) { // Cargo Ship at Pier 4
+                ctx.fillStyle = '#dc2626';
+                ctx.fillRect(oceanX + 15 * scale, py - ph/2 - 13 * scale, 95 * scale, 11 * scale);
+                ctx.fillStyle = '#6b7280'; // restore
+            }
+        });
+
+        // 3. Central Park (West District)
+        const cpX = center + (-480) * scale;
+        const cpY = center + (-250) * scale;
+        const cpW = 320 * scale;
+        const cpH = 500 * scale;
+        ctx.fillStyle = '#2d6a4f';
+        ctx.fillRect(cpX, cpY, cpW, cpH);
+
+        // Central Park Lake
+        ctx.fillStyle = '#1b4d3e';
         ctx.beginPath();
-        ctx.moveTo(center - 24, 11);
-        ctx.lineTo(center + 24, 11);
-        ctx.stroke();
+        ctx.arc(cpX + cpW * 0.5, cpY + cpH * 0.5, 18 * scale, 0, Math.PI * 2);
+        ctx.fill();
 
-        // City Blocks (Warm slate)
-        ctx.fillStyle = '#161c28';
-        ctx.fillRect(4, 18, size - 8, size - 22);
+        // 4. Urban Road Grid (Asphalt Gray)
+        ctx.fillStyle = '#374151';
+        const roadW = Math.max(2, 14 * scale);
+        const hwW = Math.max(3, 22 * scale);
 
-        // Road network (Asphalt Gray)
-        const mainRoadW = 20 * scale;
-        const secRoadW = 14 * scale;
+        // Waterfront Coastal Highway (along x = 200)
+        const hwX = center + 200 * scale;
+        ctx.fillRect(hwX - hwW/2, 4, hwW, size - 8);
 
-        ctx.fillStyle = '#3a4250';
-
-        // Main Avenue (North-South)
-        ctx.fillRect(center - mainRoadW / 2, 18, mainRoadW, size - 22);
-        // Main Boulevard (East-West)
-        ctx.fillRect(4, center - mainRoadW / 2, size - 8, mainRoadW);
-
-        // Secondary Avenues (East/West grid lines at x = ±60m)
-        [-60, 60].forEach(gx => {
-            const rx = center + gx * scale;
-            ctx.fillRect(rx - secRoadW / 2, 18, secRoadW, size - 22);
+        // North-South Avenues
+        const avenues = [-400, -260, -120, 20, 160];
+        avenues.forEach(ax => {
+            const rx = center + ax * scale;
+            ctx.fillRect(rx - roadW/2, 4, roadW, size - 8);
         });
 
-        // Secondary Streets (North/South grid lines at z = ±60m)
-        [-60, 60].forEach(gz => {
-            const rz = center + gz * scale;
-            ctx.fillRect(4, rz - secRoadW / 2, size - 8, secRoadW);
+        // East-West Cross Streets
+        const streets = [-450, -320, -190, -60, 70, 200, 330, 460];
+        streets.forEach(sz => {
+            const ry = center + sz * scale;
+            ctx.fillRect(4, ry - roadW/2, oceanX - 4, roadW);
         });
 
-        // Green Landscaped Palm Median Strip (Center Avenue)
-        ctx.fillStyle = '#2e7d32';
-        ctx.fillRect(center - 1.5, 18, 3, size - 22);
-
-        // Road double yellow center lines
+        // Highway Yellow Lines
         ctx.strokeStyle = '#f5b700';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        // E-W Boulevard center line
-        ctx.moveTo(4, center); ctx.lineTo(size - 4, center);
-        // Secondary road center lines
-        [-60, 60].forEach(gx => {
-            const rx = center + gx * scale;
-            ctx.moveTo(rx, 18); ctx.lineTo(rx, size - 4);
-        });
-        [-60, 60].forEach(gz => {
-            const rz = center + gz * scale;
-            ctx.moveTo(4, rz); ctx.lineTo(size - 4, rz);
-        });
+        ctx.moveTo(hwX, 4);
+        ctx.lineTo(hwX, size - 4);
         ctx.stroke();
 
-        // Outer Town Boundary
+        // Outer 1.2 KM Boundary
         ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(4, 4, size - 8, size - 8);
@@ -343,7 +354,6 @@ class CyberCTFGame {
             ctx.fill();
             ctx.shadowBlur = 0;
 
-            ctx.restore();
         }
     }
 

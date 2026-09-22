@@ -5,14 +5,14 @@ class CyberHackerAvatar {
         this.scene = scene;
         this.mesh = new THREE.Group();
 
-        // Movement physics
+        // Movement physics (Kilometer Scale)
         this.position = new THREE.Vector3(0, 0, 16);
         this.rotation = 0;
         this.velocity = new THREE.Vector3();
         this.isGrounded = true;
-        this.walkSpeed = 5.8;
-        this.runSpeed = 11.2;
-        this.jumpForce = 8.5;
+        this.walkSpeed = 9.0;
+        this.runSpeed = 26.0; // High-speed tactical sprint for 1.2km metropolis
+        this.jumpForce = 10.5;
         this.gravity = -22.0;
 
         // Input
@@ -462,8 +462,8 @@ class CyberHackerAvatar {
             this.isGrounded = true;
         }
 
-        // MASSIVE 200m x 200m METROPOLIS BOUNDS [-94, 94]
-        const bound = 94;
+        // TRUE 1.2-KILOMETER METROPOLIS BOUNDS [-580, 580]
+        const bound = 580;
         this.position.x = Math.max(-bound, Math.min(bound, this.position.x));
         this.position.z = Math.max(-bound, Math.min(bound, this.position.z));
 
