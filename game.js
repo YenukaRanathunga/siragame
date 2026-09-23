@@ -32,11 +32,11 @@ class CyberCTFGame {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.outputEncoding = THREE.sRGBEncoding;
 
-        // Cinematic Shadows & ACES Filmic Tone Mapping (Mr. Robot Film Look)
+        // Cinematic Shadows & ACES Filmic Tone Mapping (Vibrant Modern City Contrast)
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.08;
+        this.renderer.toneMappingExposure = 0.98;
 
         // 3. Build World & Player
         this.world = new CyberBunkerWorld(this.scene);
@@ -295,11 +295,12 @@ class CyberCTFGame {
         const hwX = center + 200 * scale;
         ctx.fillRect(hwX - hwW/2, 4, hwW, size - 8);
 
-        // North-South Avenues
-        const avenues = [-400, -260, -120, 20, 160];
+        // North-South Avenues (Including Grand Central Boulevard at X = 0)
+        const avenues = [-400, -260, -130, 0, 130];
         avenues.forEach(ax => {
             const rx = center + ax * scale;
-            ctx.fillRect(rx - roadW/2, 4, roadW, size - 8);
+            const w = (ax === 0) ? roadW * 1.3 : roadW;
+            ctx.fillRect(rx - w/2, 4, w, size - 8);
         });
 
         // East-West Cross Streets
