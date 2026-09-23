@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER-OPS 3D // Capture The Flag Web Platform</title>
+    <title>GHOSTBIT // 3D Open-World CTF Platform</title>
     <!-- Google Fonts for Cyberpunk & Terminal Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,8 @@
     <header class="cyber-header">
         <div class="header-left">
             <div class="cyber-logo">
-                <span class="glitch-text" data-text="MR. ROBOT 3D">MR. ROBOT 3D</span>
-                <span class="logo-sub">FSOCIETY // HELLO, FRIEND.</span>
-            </div>
-            <div class="view-switch-group">
-                <button id="btn-mode-3d" class="nav-tab active">🎮 3D WORLD</button>
-                <button id="btn-mode-dash" class="nav-tab">📊 WEB DASHBOARD</button>
+                <span class="glitch-text" data-text="GHOSTBIT">GHOSTBIT</span>
+                <span class="logo-sub">TACTICAL CYBERSPACE // OPEN-WORLD CTF</span>
             </div>
         </div>
 
@@ -31,8 +27,8 @@
                 <span id="hud-score" class="stat-val cyber-cyan">0</span>
                 <span class="stat-unit">PTS</span>
             </div>
-            <div class="stat-pill">
-                <span class="stat-label">SOLVED:</span>
+            <div class="stat-pill" id="pill-missions" title="Click to view Missions (or press TAB)">
+                <span class="stat-label">MISSIONS:</span>
                 <span id="hud-solved" class="stat-val cyber-green">0/6</span>
             </div>
             <button id="btn-toggle-audio" class="cyber-btn sm">🔊 SOUND: ON</button>
@@ -105,8 +101,8 @@
                 </div>
                 <div class="dash-stat-card">
                     <span class="label">WORLD SIMULATOR</span>
-                    <button class="cyber-btn primary mt-1" onclick="document.getElementById('btn-mode-3d').click();">
-                        ENTER 3D BUNKER →
+                    <button class="cyber-btn primary mt-1" onclick="window.game.switchTo3D();">
+                        RETURN TO GHOSTBIT 3D →
                     </button>
                 </div>
             </div>

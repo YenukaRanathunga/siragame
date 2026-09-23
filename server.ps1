@@ -18,7 +18,7 @@ try {
 }
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "   CYBER-OPS 3D // CTF GAME PLATFORM ONLINE               " -ForegroundColor Green
+Write-Host "   GHOSTBIT // 3D CTF GAME PLATFORM ONLINE                " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host " Running server at: $prefix" -ForegroundColor White
 Write-Host " Opening default web browser..." -ForegroundColor Yellow

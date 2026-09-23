@@ -53,32 +53,18 @@ class CyberCTFGame {
     }
 
     setupUI() {
-        // Mode Switch Buttons
-        const btn3D = document.getElementById('btn-mode-3d');
-        const btnDash = document.getElementById('btn-mode-dash');
-        const view3D = document.getElementById('game-container-3d');
-        const viewDash = document.getElementById('dashboard-container');
-
-        if (btn3D && btnDash) {
-            btn3D.addEventListener('click', () => {
-                this.currentViewMode = '3d';
-                btn3D.classList.add('active');
-                btnDash.classList.remove('active');
-                view3D.classList.remove('hidden');
-                viewDash.classList.add('hidden');
-                if (window.sounds) window.sounds.playClick();
-            });
-
-            btnDash.addEventListener('click', () => {
-                this.currentViewMode = 'dashboard';
-                btnDash.classList.add('active');
-                btn3D.classList.remove('active');
-                view3D.classList.add('hidden');
-                viewDash.classList.remove('hidden');
-                this.renderDashboard();
-                if (window.sounds) window.sounds.playClick();
-            });
+        // Mission Pill click & TAB hotkey for Dashboard
+        const missionsPill = document.getElementById('pill-missions');
+        if (missionsPill) {
+            missionsPill.addEventListener('click', () => this.toggleDashboard());
         }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                this.toggleDashboard();
+            }
+        });
 
         // Sound Mute Toggle
         const btnAudio = document.getElementById('btn-toggle-audio');
@@ -180,6 +166,29 @@ class CyberCTFGame {
                 window.sounds.startAmbient();
             }
         }, { once: true });
+    }
+
+    switchTo3D() {
+        this.currentViewMode = '3d';
+        const v3d = document.getElementById('game-container-3d');
+        const vDash = document.getElementById('dashboard-container');
+        if (v3d) v3d.classList.remove('hidden');
+        if (vDash) vDash.classList.add('hidden');
+        if (window.sounds) window.sounds.playClick();
+    }
+
+    toggleDashboard() {
+        if (this.currentViewMode === '3d') {
+            this.currentViewMode = 'dashboard';
+            const v3d = document.getElementById('game-container-3d');
+            const vDash = document.getElementById('dashboard-container');
+            if (v3d) v3d.classList.add('hidden');
+            if (vDash) vDash.classList.remove('hidden');
+            this.renderDashboard();
+        } else {
+            this.switchTo3D();
+        }
+        if (window.sounds) window.sounds.playClick();
     }
 
     onWindowResize() {
@@ -391,13 +400,7 @@ class CyberCTFGame {
     }
 
     openTerminalDirectly(challengeId) {
-        // Switch to 3D mode or open modal
-        this.currentViewMode = '3d';
-        document.getElementById('btn-mode-3d').classList.add('active');
-        document.getElementById('btn-mode-dash').classList.remove('active');
-        document.getElementById('game-container-3d').classList.remove('hidden');
-        document.getElementById('dashboard-container').classList.add('hidden');
-
+        this.switchTo3D();
         window.terminalUI.openTerminal(challengeId);
     }
 

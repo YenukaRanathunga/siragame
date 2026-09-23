@@ -66,44 +66,22 @@ body {
 
 .glitch-text {
     font-family: var(--font-heading);
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 900;
-    color: var(--cyan);
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    color: #ffffff;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #00f0ff 0%, #ffffff 50%, #00f0ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.65));
 }
 
 .logo-sub {
     font-size: 10px;
-    letter-spacing: 1.5px;
-    color: var(--text-dim);
+    letter-spacing: 2px;
+    color: rgba(0, 240, 255, 0.75);
     font-family: var(--font-mono);
-}
-
-.view-switch-group {
-    display: flex;
-    background: rgba(15, 24, 44, 0.8);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    overflow: hidden;
-}
-
-.nav-tab {
-    background: transparent;
-    border: none;
-    color: var(--text-dim);
-    padding: 8px 16px;
-    font-family: var(--font-heading);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.nav-tab.active {
-    background: var(--cyan);
-    color: #050811;
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    font-weight: 600;
 }
 
 .stat-pill {
@@ -116,6 +94,17 @@ body {
     gap: 8px;
     font-family: var(--font-mono);
     font-size: 13px;
+}
+
+#pill-missions {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#pill-missions:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+    transform: translateY(-1px);
 }
 
 .stat-label {
