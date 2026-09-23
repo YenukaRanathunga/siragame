@@ -446,36 +446,44 @@ class CyberHackerAvatar {
 
             const speed = this.keys.sprint ? this.runSpeed : this.walkSpeed;
             const colliders = window.worldColliders || [];
-            const charRadius = 0.75;
+            const charRadius = 0.85;
 
-            // X-axis movement with solid wall collision check
-            const nextX = this.position.x + rotatedX * speed * dt;
-            let canMoveX = true;
-            for (let i = 0; i < colliders.length; i++) {
-                const c = colliders[i];
-                if (nextX + charRadius > c.minX && nextX - charRadius < c.maxX &&
-                    this.position.z + charRadius > c.minZ && this.position.z - charRadius < c.maxZ) {
-                    canMoveX = false;
-                    break;
-                }
-            }
-            if (canMoveX) {
-                this.position.x = nextX;
-            }
+            // Apply movement vector
+            this.position.x += rotatedX * speed * dt;
+            this.position.z += rotatedZ * speed * dt;
 
-            // Z-axis movement with solid wall collision check (enables smooth wall sliding)
-            const nextZ = this.position.z + rotatedZ * speed * dt;
-            let canMoveZ = true;
-            for (let i = 0; i < colliders.length; i++) {
-                const c = colliders[i];
-                if (this.position.x + charRadius > c.minX && this.position.x - charRadius < c.maxX &&
-                    nextZ + charRadius > c.minZ && nextZ - charRadius < c.maxZ) {
-                    canMoveZ = false;
-                    break;
+            // Bulletproof Circle vs AABB Continuous Collision & Separation Solver (3 iterations for corners & clusters)
+            for (let iter = 0; iter < 3; iter++) {
+                for (let i = 0; i < colliders.length; i++) {
+                    const c = colliders[i];
+                    // Find closest point on box to character center
+                    const closestX = Math.max(c.minX, Math.min(this.position.x, c.maxX));
+                    const closestZ = Math.max(c.minZ, Math.min(this.position.z, c.maxZ));
+
+                    const dx = this.position.x - closestX;
+                    const dz = this.position.z - closestZ;
+                    const distSq = dx * dx + dz * dz;
+
+                    if (distSq < charRadius * charRadius) {
+                        const dist = Math.sqrt(distSq);
+                        if (dist > 0.0001) {
+                            const overlap = charRadius - dist;
+                            this.position.x += (dx / dist) * overlap;
+                            this.position.z += (dz / dist) * overlap;
+                        } else {
+                            // Center is inside box - push out along closest edge
+                            const dLeft = Math.abs(this.position.x - c.minX);
+                            const dRight = Math.abs(c.maxX - this.position.x);
+                            const dTop = Math.abs(this.position.z - c.minZ);
+                            const dBottom = Math.abs(c.maxZ - this.position.z);
+                            const minD = Math.min(dLeft, dRight, dTop, dBottom);
+                            if (minD === dLeft) this.position.x = c.minX - charRadius;
+                            else if (minD === dRight) this.position.x = c.maxX + charRadius;
+                            else if (minD === dTop) this.position.z = c.minZ - charRadius;
+                            else this.position.z = c.maxZ + charRadius;
+                        }
+                    }
                 }
-            }
-            if (canMoveZ) {
-                this.position.z = nextZ;
             }
 
             this.rotation = Math.atan2(rotatedX, rotatedZ);
@@ -492,10 +500,9 @@ class CyberHackerAvatar {
             this.isGrounded = true;
         }
 
-        // TRUE 1.2-KILOMETER METROPOLIS BOUNDS [-580, 580]
-        const bound = 580;
-        this.position.x = Math.max(-bound, Math.min(bound, this.position.x));
-        this.position.z = Math.max(-bound, Math.min(bound, this.position.z));
+        // TRUE CITY METROPOLIS BOUNDS [-500, 500] (Prevents clipping into mountain backdrop cones)
+        this.position.x = Math.max(-495, Math.min(380, this.position.x));
+        this.position.z = Math.max(-495, Math.min(495, this.position.z));
 
         this.mesh.position.copy(this.position);
 

@@ -650,7 +650,30 @@ class CyberBunkerWorld {
             mountainGroup.add(peak);
         }
 
+        // Foothill Rock Barrier Ridge along perimeter
+        const rockWallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9, flatShading: true });
+        for (let rx = -500; rx <= 500; rx += 25) {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(8 + Math.random() * 4, 1), rockWallMat);
+            rock.position.set(rx, 4, -495);
+            rock.scale.set(1.4, 0.8, 1.2);
+            rock.castShadow = true;
+            mountainGroup.add(rock);
+        }
+        for (let rz = -500; rz <= 500; rz += 25) {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(8 + Math.random() * 4, 1), rockWallMat);
+            rock.position.set(-495, 4, rz);
+            rock.scale.set(1.2, 0.8, 1.4);
+            rock.castShadow = true;
+            mountainGroup.add(rock);
+        }
+
         this.scene.add(mountainGroup);
+
+        // Solid Mountain & Map Perimeter Colliders (Completely impenetrable boundaries)
+        this.addBoxCollider(0, -495, 1200, 30);  // North Mountain Wall
+        this.addBoxCollider(-495, 0, 30, 1200);  // West Mountain Wall
+        this.addBoxCollider(0, 495, 1200, 30);   // South Boundary Wall
+        this.addBoxCollider(385, 0, 30, 1200);   // East Ocean Deep-Water Barrier
     }
 
     buildRoadsSidewalksAndLawns() {
