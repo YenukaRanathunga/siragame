@@ -14,7 +14,7 @@ if (-not $Token) {
 }
 
 $root = $PSScriptRoot
-$fileNames = @("index.html", "style.css", "game.js", "character.js", "world.js", "terminal-ui.js", "challenges.js", "audio.js", "three.min.js", "confetti.browser.min.js")
+$fileNames = @("index.html", "style.css", "game.js", "character.js", "world.js", "terminal-ui.js", "challenges.js", "audio.js", "three.min.js", "confetti.browser.min.js", "vercel.json")
 $filesList = @()
 
 foreach ($fn in $fileNames) {
@@ -30,7 +30,7 @@ foreach ($fn in $fileNames) {
 }
 
 $payload = @{
-    name = "cyber-ctf-3d"
+    name = "ghostbit-3d"
     files = $filesList
     projectSettings = @{
         framework = $null
