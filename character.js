@@ -29,7 +29,7 @@ class CyberHackerAvatar {
         this.isMoving = false;
 
         // Camera: Third Person (Cinematic Over-The-Shoulder) & First Person
-        this.cameraMode = 'tpv';
+        this.cameraMode = (window.gameSettings && window.gameSettings.load().cameraMode) || 'tpv';
         this.cameraAngle = {
             theta: Math.PI,
             phi: 0.28,
@@ -40,8 +40,11 @@ class CyberHackerAvatar {
         this.raycaster = new THREE.Raycaster();
         this.downVector = new THREE.Vector3(0, -1, 0);
         this.rayOrigin = new THREE.Vector3();
+        this.moveDirVec = new THREE.Vector3();
+        this.fpvLookTarget = new THREE.Vector3();
 
         this.buildCyberLeekModel();
+        this.mesh.visible = (this.cameraMode === 'tpv');
         this.setupEventListeners();
         this.scene.add(this.mesh);
     }
@@ -363,6 +366,7 @@ class CyberHackerAvatar {
                 case 'KeyV':
                     this.cameraMode = (this.cameraMode === 'tpv') ? 'fpv' : 'tpv';
                     this.mesh.visible = (this.cameraMode === 'tpv');
+                    if (window.gameSettings) window.gameSettings.save({ cameraMode: this.cameraMode });
                     if (window.sounds) window.sounds.playClick();
                     break;
             }
@@ -434,7 +438,7 @@ class CyberHackerAvatar {
     update(delta, camera) {
         const dt = Math.min(delta, 0.1);
 
-        const moveDir = new THREE.Vector3();
+        const moveDir = this.moveDirVec.set(0, 0, 0);
         if (this.keys.forward) moveDir.z -= 1;
         if (this.keys.backward) moveDir.z += 1;
         if (this.keys.left) moveDir.x -= 1;
@@ -574,12 +578,12 @@ class CyberHackerAvatar {
     updateCamera(camera) {
         if (this.cameraMode === 'fpv') {
             camera.position.set(this.position.x, this.position.y + 1.9, this.position.z);
-            const lookTarget = new THREE.Vector3(
+            this.fpvLookTarget.set(
                 this.position.x - Math.sin(this.cameraAngle.theta) * 10,
                 this.position.y + 1.9 - Math.sin(this.cameraAngle.phi) * 8,
                 this.position.z - Math.cos(this.cameraAngle.theta) * 10
             );
-            camera.lookAt(lookTarget);
+            camera.lookAt(this.fpvLookTarget);
         } else {
             // Cinematic 3rd person follow
             const dist = this.cameraAngle.distance;
@@ -588,6 +592,7 @@ class CyberHackerAvatar {
 
             const camX = this.position.x + dist * Math.sin(theta) * Math.cos(phi);
             const camY = this.position.y + 1.8 + dist * Math.sin(phi);
+            const camZ = this.position.z + dist * Math.cos(theta) * Math.cos(phi);
             camera.position.set(camX, camY, camZ);
             camera.lookAt(this.position.x, this.position.y + 1.4, this.position.z);
         }

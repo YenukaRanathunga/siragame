@@ -5,6 +5,7 @@ class CyberCTFGame {
         this.scene = null;
         this.camera = null;
         this.renderer = null;
+        this.composer = null;
         this.world = null;
         this.player = null;
         this.clock = new THREE.Clock();
@@ -43,14 +44,99 @@ class CyberCTFGame {
         this.world = new CyberBunkerWorld(this.scene);
         this.player = new CyberHackerAvatar(this.scene);
 
-        // 4. UI Bindings
+        // 4. Post-Processing: Neon Bloom + PBR Environment Reflections
+        this.initPostProcessing();
+
+        // 5. UI Bindings
         this.setupUI();
 
-        // 5. Window Resize Handler
+        // 6. Window Resize Handler
         window.addEventListener('resize', () => this.onWindowResize());
 
-        // 6. Start Loop
+        // 7. Start Loop
         this.animate();
+    }
+
+    initPostProcessing() {
+        if (!THREE.EffectComposer || !THREE.UnrealBloomPass || !THREE.RenderPass) {
+            console.warn('GHOSTBIT: post-processing scripts missing, using direct render.');
+            return;
+        }
+        try {
+            this.composer = new THREE.EffectComposer(this.renderer);
+            this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
+
+            const bloomPass = new THREE.UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                0.8,
+                0.45,
+                0.6
+            );
+            this.composer.addPass(bloomPass);
+
+            this.buildNightEnvironment();
+        } catch (err) {
+            console.warn('GHOSTBIT: bloom init failed, using direct render.', err);
+            this.composer = null;
+        }
+    }
+
+    buildNightEnvironment() {
+        const pmrem = new THREE.PMREMGenerator(this.renderer);
+        const envScene = new THREE.Scene();
+
+        // Night gradient sky dome
+        const skyCanvas = document.createElement('canvas');
+        skyCanvas.width = 1024;
+        skyCanvas.height = 512;
+        const ctx = skyCanvas.getContext('2d');
+        const g = ctx.createLinearGradient(0, 0, 0, 512);
+        g.addColorStop(0, '#01030a');
+        g.addColorStop(0.45, '#0a1128');
+        g.addColorStop(0.72, '#16234f');
+        g.addColorStop(1, '#1e2f5e');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 1024, 512);
+
+        // Distant city-light band near the horizon
+        const cityColors = ['#ffd98a', '#7fd8ff', '#ff2d95', '#f8fafc'];
+        for (let i = 0; i < 140; i++) {
+            const x = Math.random() * 1024;
+            const y = 390 + Math.random() * 110;
+            ctx.fillStyle = cityColors[i % 4];
+            ctx.globalAlpha = 0.35 + Math.random() * 0.65;
+            ctx.fillRect(x, y, 2 + Math.random() * 3, 6 + Math.random() * 6);
+        }
+        ctx.globalAlpha = 1;
+
+        const skyTex = new THREE.CanvasTexture(skyCanvas);
+        skyTex.mapping = THREE.EquirectangularReflectionMapping;
+        const sky = new THREE.Mesh(
+            new THREE.SphereGeometry(100, 32, 16),
+            new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide })
+        );
+        envScene.add(sky);
+
+        // Neon strips ringing the environment for glossy reflections
+        const neonColors = [0xff2d95, 0x00f0ff, 0x7fd8ff, 0xffd98a];
+        for (let i = 0; i < 14; i++) {
+            const strip = new THREE.Mesh(
+                new THREE.BoxGeometry(16, 0.5, 0.5),
+                new THREE.MeshBasicMaterial({ color: neonColors[i % 4] })
+            );
+            const a = (i / 14) * Math.PI * 2;
+            strip.position.set(Math.cos(a) * 55, 9 + Math.random() * 6, Math.sin(a) * 55);
+            strip.lookAt(0, strip.position.y, 0);
+            envScene.add(strip);
+        }
+
+        try {
+            const rt = pmrem.fromScene(envScene, 0.04);
+            this.scene.environment = rt.texture;
+        } catch (err) {
+            console.warn('GHOSTBIT: environment map generation failed.', err);
+        }
+        if (pmrem.dispose) pmrem.dispose();
     }
 
     showBannerNotification(message, type = 'info') {
@@ -124,13 +210,26 @@ class CyberCTFGame {
         if (btnCloseCert) btnCloseCert.addEventListener('click', () => this.toggleCertificate(false));
         if (btnRenderCert) btnRenderCert.addEventListener('click', () => this.updateCertificateDisplay());
 
+        const certNameInput = document.getElementById('cert-student-name');
+        if (certNameInput && window.gameSettings) {
+            const savedName = window.gameSettings.load().certName;
+            if (savedName) certNameInput.value = savedName;
+        }
+
         // Sound Mute Toggle
         const btnAudio = document.getElementById('btn-toggle-audio');
         if (btnAudio) {
-            btnAudio.addEventListener('click', () => {
-                const muted = window.sounds.toggleMute();
-                btnAudio.innerHTML = muted ? '🔇 SOUND: OFF' : '🔊 SOUND: ON';
+            const syncMuteLabel = () => {
+                const muted = window.sounds.isMuted;
+                btnAudio.innerHTML = muted
+                    ? '🔇 <span class="btn-label">SOUND: OFF</span>'
+                    : '🔊 <span class="btn-label">SOUND: ON</span>';
                 btnAudio.classList.toggle('muted', muted);
+            };
+            syncMuteLabel();
+            btnAudio.addEventListener('click', () => {
+                window.sounds.toggleMute();
+                syncMuteLabel();
             });
         }
 
@@ -252,14 +351,15 @@ class CyberCTFGame {
         const scoreDisp = document.getElementById('cert-display-score');
         const dateDisp = document.getElementById('cert-display-date');
 
+        if (nameInp && window.gameSettings) {
+            window.gameSettings.save({ certName: nameInp.value });
+        }
+
         const score = window.challengeManager.score;
         const solved = window.challengeManager.solvedCount;
         const playable = window.challengeManager.challenges.filter(c => !c.isDecoy).length;
 
-        let rank = "CADET OPERATIVE (TIER 1)";
-        if (score >= 1400) rank = "RED TEAM MASTER OPERATOR (TIER 4)";
-        else if (score >= 700) rank = "SECURITY SPECIALIST (TIER 3)";
-        else if (score >= 300) rank = "CYBER DEFENDER (TIER 2)";
+        const rank = window.challengeManager.getRank();
 
         if (nameDisp) nameDisp.innerText = nameInp ? nameInp.value || 'Cyber Cadet' : 'Cyber Cadet';
         if (rankDisp) rankDisp.innerText = rank;
@@ -311,6 +411,7 @@ class CyberCTFGame {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        if (this.composer) this.composer.setSize(window.innerWidth, window.innerHeight);
     }
 
     checkTerminalProximity() {
@@ -331,22 +432,26 @@ class CyberCTFGame {
         });
 
         const prompt = document.getElementById('interaction-prompt');
+        const foundId = foundNearby ? foundNearby.id : null;
 
-        if (foundNearby) {
-            this.nearbyTerminal = foundNearby;
-            if (prompt) {
-                prompt.classList.remove('hidden');
-                prompt.innerHTML = `
-                    <div class="prompt-key">E</div>
-                    <div class="prompt-text">
-                        <span class="prompt-action">ACCESS TERMINAL</span>
-                        <span class="prompt-station">${foundNearby.challenge.title}</span>
-                    </div>
-                `;
+        if (foundId !== this.lastPromptTerminalId) {
+            this.lastPromptTerminalId = foundId;
+            if (foundNearby) {
+                if (prompt) {
+                    prompt.classList.remove('hidden');
+                    prompt.innerHTML = `
+                        <div class="prompt-key">E</div>
+                        <div class="prompt-text">
+                            <span class="prompt-action">ACCESS TERMINAL</span>
+                            <span class="prompt-station">${foundNearby.challenge.title}</span>
+                        </div>
+                    `;
+                }
+                this.nearbyTerminal = foundNearby;
+            } else {
+                this.nearbyTerminal = null;
+                if (prompt) prompt.classList.add('hidden');
             }
-        } else {
-            this.nearbyTerminal = null;
-            if (prompt) prompt.classList.add('hidden');
         }
     }
 
@@ -471,7 +576,11 @@ class CyberCTFGame {
             this.world.update(delta, this.player.position, window.challengeManager.score);
             this.checkTerminalProximity();
             this.renderRadarMinimap();
-            this.renderer.render(this.scene, this.camera);
+            if (this.composer) {
+                this.composer.render();
+            } else {
+                this.renderer.render(this.scene, this.camera);
+            }
         }
     }
 }

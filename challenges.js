@@ -86,7 +86,7 @@ window.CHALLENGES_DATA = [
         color: "#ffb703",
         threeColor: 0xffb703,
         icon: "🔐",
-        pos: { x: 14, z: -10 },
+        pos: { x: -14, z: 10 },
         flag: "CTF{cyber_crypto_cipher_master}",
         solved: false,
         summary: "Decode a two-stage intercepted military transmission combining ROT13 and Base64.",
@@ -95,7 +95,7 @@ window.CHALLENGES_DATA = [
             <p>A covert satellite transmission was intercepted from the bunker's microwave antenna:</p>
             <div class="crypto-box">
                 <span class="label">INTERCEPTED CYPHERTEXT:</span>
-                <div class="ciphertext-text">UEdTe3Bsb3JlX3BlbGNnYl9wdmN1cmVfem5mZ3JlZX0=</div>
+                <div class="ciphertext-text">UEdTe3Bsb3JlX3BlbGNnYl9wdmN1cmVfem5mZ3JlfQ==</div>
             </div>
             <p><strong>INTEL:</strong> The plaintext flag was rotated using the Caesar substitution cipher (ROT13) and then encoded into standard RFC 4648 Base64.</p>
         `,
@@ -154,7 +154,7 @@ window.CHALLENGES_DATA = [
         color: "#00f0ff",
         threeColor: 0x00f0ff,
         icon: "🌐",
-        pos: { x: 232, z: -210 },
+        pos: { x: 200, z: -210 },
         flag: "CTF{sql_inject_admin_bypass_2026}",
         solved: false,
         summary: "Bypass internal administrative gateway via SQL Injection vulnerability in database authentication query.",
@@ -395,7 +395,7 @@ function verifySerial(key) {
         color: "#b026ff",
         threeColor: 0xb026ff,
         icon: "👑",
-        pos: { x: 0, z: 2 },
+        pos: { x: 0, z: -160 },
         flag: "CTF{omega_core_master_mainframe_neutralized_2026}",
         solved: false,
         summary: "The ultimate security mainframe. Requires at least 600 points from surrounding stations to bypass laser shields.",
@@ -538,6 +538,13 @@ class ChallengeManager {
         }
     }
 
+    getRank() {
+        if (this.score >= 1400) return "RED TEAM MASTER OPERATOR (TIER 4)";
+        if (this.score >= 700) return "SECURITY SPECIALIST (TIER 3)";
+        if (this.score >= 300) return "CYBER DEFENDER (TIER 2)";
+        return "CADET OPERATIVE (TIER 1)";
+    }
+
     updateStats() {
         const playable = this.challenges.filter(c => !c.isDecoy);
         this.solvedCount = playable.filter(c => c.solved).length;
@@ -548,11 +555,25 @@ class ChallengeManager {
         const solvedElem = document.getElementById('hud-solved');
         const dashScore = document.getElementById('dash-total-score');
         const dashSolved = document.getElementById('dash-solved-count');
+        const dashClear = document.getElementById('dash-clearance-status');
+        const tableScore = document.getElementById('table-score');
+        const tableSolved = document.getElementById('table-solved');
+        const tableRank = document.getElementById('table-rank');
 
         if (scoreElem) scoreElem.innerText = this.score;
         if (solvedElem) solvedElem.innerText = `${this.solvedCount}/${playable.length}`;
         if (dashScore) dashScore.innerText = this.score;
         if (dashSolved) dashSolved.innerText = `${this.solvedCount}/${playable.length}`;
+        if (dashClear) dashClear.innerText = this.getRank();
+        if (tableScore) tableScore.innerText = `${this.score} PTS`;
+        if (tableSolved) tableSolved.innerText = `${this.solvedCount} / ${playable.length}`;
+
+        if (tableRank) {
+            const rivals = [3120, 2200, 1650];
+            const rank = 1 + rivals.filter(s => s > this.score).length;
+            tableRank.innerText = `#${rank}`;
+            tableRank.className = `rank-badge ${rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'you'}`;
+        }
 
         // Update Wanted level display
         this.setWantedLevel(this.wantedLevel);

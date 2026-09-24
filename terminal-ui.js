@@ -1,5 +1,14 @@
 // Interactive Hacker Terminal UI, University Theory, and Challenge Simulators
 
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 class TerminalUIManager {
     constructor() {
         this.activeChallenge = null;
@@ -288,7 +297,7 @@ class TerminalUIManager {
                 <div class="sim-body">
                     <div class="form-group">
                         <label>INPUT CIPHERTEXT:</label>
-                        <input type="text" id="crypto-input" value="UEdTe2N5YmVyX2NyeXB0b19jaXBoZXJfbWFzdGVyfQ==">
+                        <input type="text" id="crypto-input" value="UEdTe3Bsb3JlX3BlbGNnYl9wdmN1cmVfem5mZ3JlfQ==">
                     </div>
                     <div class="btn-group">
                         <button class="cyber-btn primary" id="btn-decode-b64">1. DECODE BASE64</button>
@@ -428,7 +437,7 @@ class TerminalUIManager {
                 if (window.sounds) window.sounds.playSuccess();
                 out.innerHTML = `
                     <div class="text-success">[+] SQL QUERY EXECUTED:</div>
-                    <div class="code-preview">${sql}</div>
+                    <div class="code-preview">${escapeHtml(sql)}</div>
                     <div class="text-success mt-2">✔ AUTHENTICATION BYPASSED! Administrator session token granted.</div>
                     <div class="flag-reveal mt-2">FLAG: <span class="highlight-flag">CTF{sql_inject_admin_bypass_2026}</span></div>
                 `;
@@ -437,7 +446,7 @@ class TerminalUIManager {
                 if (window.sounds) window.sounds.playError();
                 out.innerHTML = `
                     <div class="text-danger">[-] SQL QUERY EXECUTED:</div>
-                    <div class="code-preview">${sql}</div>
+                    <div class="code-preview">${escapeHtml(sql)}</div>
                     <div class="text-danger mt-2">✖ ACCESS DENIED: Invalid username or password hash.</div>
                 `;
             }
@@ -704,7 +713,7 @@ class TerminalUIManager {
             const val = inp.value.trim();
             if (!val) return;
 
-            feed.innerHTML += `<div class="comment-item user"><strong>You:</strong> ${val.replace(/</g, '&lt;')}</div>`;
+            feed.innerHTML += `<div class="comment-item user"><strong>You:</strong> ${escapeHtml(val)}</div>`;
             log.innerHTML = `<div>[BOT] Auditing new comment ID #4092...</div>`;
             inp.value = '';
 

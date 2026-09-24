@@ -1,9 +1,26 @@
 // Mr. Robot (Mac Quayle Style) Tense Electronic Pulse Audio Synthesizer
 
+window.gameSettings = {
+    load() {
+        try {
+            return JSON.parse(localStorage.getItem('ghostbit_settings')) || {};
+        } catch (e) {
+            return {};
+        }
+    },
+    save(patch) {
+        try {
+            const cur = this.load();
+            Object.assign(cur, patch);
+            localStorage.setItem('ghostbit_settings', JSON.stringify(cur));
+        } catch (e) {}
+    }
+};
+
 class SoundManager {
     constructor() {
         this.ctx = null;
-        this.isMuted = false;
+        this.isMuted = !!(window.gameSettings && window.gameSettings.load().muted);
         this.isAmbientPlaying = false;
         this.masterGain = null;
         this.bassGain = null;
@@ -29,6 +46,10 @@ class SoundManager {
         if (this.masterGain) {
             this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
         }
+        if (!this.isMuted && !this.isAmbientPlaying) {
+            this.startAmbient();
+        }
+        if (window.gameSettings) window.gameSettings.save({ muted: this.isMuted });
         return this.isMuted;
     }
 

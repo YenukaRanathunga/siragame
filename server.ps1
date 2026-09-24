@@ -50,7 +50,17 @@ while ($listener.IsListening) {
             $path = "index.html"
         }
 
-        $filePath = Join-Path $root $path
+        $rootFull = [System.IO.Path]::GetFullPath($root)
+        $filePath = [System.IO.Path]::GetFullPath((Join-Path $rootFull $path))
+        $rootPrefix = $rootFull.TrimEnd('\') + '\'
+
+        if (-not $filePath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $response.StatusCode = 403
+            $errBytes = [System.Text.Encoding]::UTF8.GetBytes("403 Forbidden")
+            $response.OutputStream.Write($errBytes, 0, $errBytes.Length)
+            $response.Close()
+            continue
+        }
 
         if (Test-Path $filePath -PathType Leaf) {
             $ext = [System.IO.Path]::GetExtension($filePath).ToLower()

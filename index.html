@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4.0">
+    <link rel="stylesheet" href="style.css?v=4.1">
 </head>
 <body>
 
@@ -35,10 +35,10 @@
                 <span class="stat-label">MISSIONS:</span>
                 <span id="hud-solved" class="stat-val cyber-green">0/12</span>
             </div>
-            <button id="btn-open-codex" class="cyber-btn sm" title="University Cyber Codex & Cheatsheet (Press C)">📖 CODEX</button>
-            <button id="btn-open-cert" class="cyber-btn sm" title="Academic Cyber Certificate (Press G)">🎓 CERTIFICATE</button>
-            <button id="btn-toggle-audio" class="cyber-btn sm">🔊 SOUND: ON</button>
-            <button id="btn-open-help" class="cyber-btn sm">❓ HELP</button>
+            <button id="btn-open-codex" class="cyber-btn sm" title="University Cyber Codex & Cheatsheet (Press C)">📖 <span class="btn-label">CODEX</span></button>
+            <button id="btn-open-cert" class="cyber-btn sm" title="Academic Cyber Certificate (Press G)">🎓 <span class="btn-label">CERTIFICATE</span></button>
+            <button id="btn-toggle-audio" class="cyber-btn sm">🔊 <span class="btn-label">SOUND: ON</span></button>
+            <button id="btn-open-help" class="cyber-btn sm">❓ <span class="btn-label">HELP</span></button>
         </div>
     </header>
 
@@ -61,7 +61,7 @@
             <canvas id="radar-canvas" width="150" height="150"></canvas>
             <div class="radar-legend">
                 <span><span class="dot cyan"></span> You</span>
-                <span><span class="dot pink"></span> Terminal</span>
+                <span><span class="dot pink"></span> Station</span>
                 <span><span class="dot green"></span> Cleared</span>
             </div>
         </div>
@@ -155,7 +155,7 @@
                         <td><strong>ZeroCool_99</strong></td>
                         <td>BlackHat Division</td>
                         <td>12 / 12</td>
-                        <td><span class="cyber-cyan font-bold">2970 PTS</span></td>
+                        <td><span class="cyber-cyan font-bold">3120 PTS</span></td>
                     </tr>
                     <tr class="rank-2">
                         <td><span class="rank-badge silver">#2</span></td>
@@ -172,7 +172,7 @@
                         <td><span class="cyber-cyan font-bold">1650 PTS</span></td>
                     </tr>
                     <tr class="rank-you">
-                        <td><span class="rank-badge you">#4</span></td>
+                        <td><span class="rank-badge you" id="table-rank">#4</span></td>
                         <td><strong>YOU (Ghostbit Operative)</strong></td>
                         <td>Infiltrator Unit</td>
                         <td id="table-solved">0 / 12</td>
@@ -408,12 +408,21 @@
     <script src="three.min.js"></script>
     <script src="confetti.browser.min.js"></script>
 
+    <!-- Three.js r128 Post-Processing (Bloom / Neon Glow) -->
+    <script src="CopyShader.js"></script>
+    <script src="LuminosityHighPassShader.js"></script>
+    <script src="Pass.js"></script>
+    <script src="ShaderPass.js"></script>
+    <script src="EffectComposer.js"></script>
+    <script src="RenderPass.js"></script>
+    <script src="UnrealBloomPass.js"></script>
+
     <!-- Game Scripts (Cache-Busting Enabled) -->
-    <script src="audio.js?v=4.0"></script>
-    <script src="challenges.js?v=4.0"></script>
-    <script src="character.js?v=4.0"></script>
-    <script src="world.js?v=4.0"></script>
-    <script src="terminal-ui.js?v=4.0"></script>
-    <script src="game.js?v=4.0"></script>
+    <script src="audio.js?v=4.1"></script>
+    <script src="challenges.js?v=4.1"></script>
+    <script src="character.js?v=4.1"></script>
+    <script src="world.js?v=4.1"></script>
+    <script src="terminal-ui.js?v=4.1"></script>
+    <script src="game.js?v=4.1"></script>
 </body>
 </html>

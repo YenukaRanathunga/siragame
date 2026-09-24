@@ -1,4 +1,4 @@
-# 🎮 CYBER-OPS 3D // Capture The Flag Web Platform
+# 🎮 GHOSTBIT // 3D Open-World CTF & Cyber Range
 
 A 3D Cyberpunk Capture The Flag (CTF) game platform built for the browser. Players control a 3D hacker operative exploring an underground cyber facility, approaching interactive workstations, solving real cybersecurity challenges, submitting flags, and climbing the leaderboard.
 
@@ -48,14 +48,20 @@ python -m http.server 8080
 
 ## 🎯 Challenges Included
 
-| Station | Category | Points | Description |
-| --- | --- | --- | --- |
-| **Station 01** | Web Exploitation | 100 PTS | SQL Injection authentication bypass (`admin' OR '1'='1' --`) |
-| **Station 02** | Cryptography | 150 PTS | Multi-layer ROT13 + Base64 transmission cipher |
-| **Station 03** | Linux / PrivEsc | 200 PTS | Interactive in-browser Bash shell with `sudo -l` inspection |
-| **Station 04** | Digital Forensics | 250 PTS | Network packet stream inspection & hex editor analysis |
-| **Station 05** | Reverse Engineering | 300 PTS | Decompiled serial license verification algorithm |
-| **Station 06** | Master Mainframe | 500 PTS | Central boss supercomputer. Laser barrier unlocks at 500+ PTS! |
+| Sector | Category | Tier | Points | Description |
+| --- | --- | --- | --- | --- |
+| **Sector 01** | Linux & Shell | Novice | 100 PTS | Shadow log recon — `grep`, `tail`, permission inspection |
+| **Sector 02** | Web Recon | Novice | 120 PTS | Metro transit gate auth — client-side validation bypass |
+| **Sector 03** | Cryptography | Novice | 150 PTS | Multi-layer ROT13 + Base64 transmission cipher |
+| **Sector 04** | Critical SCADA / IoT | Intermediate | 200 PTS | High-voltage substation override — frequency & voltage tuning |
+| **Sector 05** | Web Exploitation | Intermediate | 200 PTS | SQL Injection authentication bypass (`admin' OR '1'='1' --`) |
+| **Sector 06** | Network Forensics | Intermediate | 250 PTS | Network packet stream inspection & hex editor analysis |
+| **Sector 07** | Radio / Telecommunications | Advanced | 250 PTS | Skyway broadcast tower hijack via UDP injection |
+| **Sector 08** | Linux / PrivEsc | Advanced | 300 PTS | Interactive in-browser Bash shell with `sudo -l` inspection |
+| **Sector 09** | Cryptography | Advanced | 300 PTS | Hashcat-style rainbow table cracking |
+| **Sector 10** | Web Exploitation | Master | 350 PTS | Stored XSS against an admin review bot |
+| **Sector 11** | Reverse Engineering | Master | 400 PTS | Decompiled serial license verification algorithm |
+| **Sector 12** | Master Mainframe | Master | 500 PTS | Central boss supercomputer. Laser barrier unlocks at 600+ PTS! |
 
 ---
 

@@ -19,6 +19,9 @@ class CyberBunkerWorld {
         this.isBlackout = false;
         this.billboardCanvas = null;
         this.billboardTexture = null;
+        this.beacons = [];
+        this.rainSystem = null;
+        this.elapsed = 0;
 
         // Build rich procedural texture palette for vibrant Cyberpunk Night aesthetic
         this.textures = this.initProceduralTextures();
@@ -37,6 +40,7 @@ class CyberBunkerWorld {
         this.buildMetropolisVehicles();
         this.buildChallengeStations();
         this.buildPoliceHelicopter();
+        this.buildRainSystem();
 
         // Export colliders and walkable surfaces globally
         window.worldColliders = this.colliders;
@@ -83,6 +87,7 @@ class CyberBunkerWorld {
     }
 
     initProceduralTextures() {
+        const emissive = this.createEmissiveMaps();
         return {
             lushGrass: this.createLushGrassTexture(),
             darkAsphaltRoad: this.createDarkAsphaltRoadTexture(),
@@ -95,7 +100,12 @@ class CyberBunkerWorld {
             colorfulRetailPodium: this.createRetailPodiumTexture(),
             billboardAds: this.createBillboardTexture(),
             helipadRoof: this.createHelipadTexture(),
-            roofGravel: this.createRoofGravelTexture()
+            roofGravel: this.createRoofGravelTexture(),
+            emissiveBlue: emissive.blue,
+            emissiveTeal: emissive.teal,
+            emissiveWhite: emissive.white,
+            emissiveTerra: emissive.terra,
+            emissiveRetail: emissive.retail
         };
     }
 
@@ -599,6 +609,106 @@ class CyberBunkerWorld {
         return tex;
     }
 
+    // 15. Emissive Night Maps (black facades with glowing lit windows for bloom)
+    createEmissiveMaps() {
+        const make = (w, h, drawFn) => {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, w, h);
+            drawFn(ctx);
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        };
+
+        return {
+            blue: make(512, 512, (ctx) => {
+                const cols = 8, rows = 14;
+                const cellW = 512 / cols, cellH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let col = 0; col < cols; col++) {
+                        const wx = col * cellW + 3;
+                        const wy = r * cellH + 4;
+                        const ww = cellW - 6;
+                        const wh = cellH - 6;
+                        const rand = (col * 7 + r * 13) % 11;
+                        if (rand === 0) ctx.fillStyle = '#ffd98a';
+                        else if (rand === 1) ctx.fillStyle = '#7fd8ff';
+                        else if (rand === 2) ctx.fillStyle = '#e8f4ff';
+                        else continue;
+                        ctx.fillRect(wx + 1, wy + 1, ww - 2, wh - 2);
+                    }
+                }
+            }),
+            teal: make(512, 512, (ctx) => {
+                const cols = 6, rows = 12;
+                const cellW = 512 / cols, cellH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let col = 0; col < cols; col++) {
+                        if ((col + r * 3) % 5 !== 0) continue;
+                        const wx = col * cellW + 4;
+                        const wy = r * cellH + 5;
+                        ctx.fillStyle = '#bff4ff';
+                        ctx.fillRect(wx + 2, wy + 2, cellW - 12, cellH - 12);
+                    }
+                }
+            }),
+            white: make(512, 512, (ctx) => {
+                const rows = 10;
+                const rowH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    const ry = r * rowH;
+                    for (let x = 20; x < 490; x += 36) {
+                        if ((x + r * 50) % 7 !== 0) continue;
+                        ctx.fillStyle = '#ffe58a';
+                        ctx.fillRect(x + 4, ry + 14, 28, rowH - 28);
+                    }
+                }
+            }),
+            terra: make(512, 512, (ctx) => {
+                const cols = 5, rows = 8;
+                const cellW = 512 / cols, cellH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let col = 0; col < cols; col++) {
+                        const wx = col * cellW + 18;
+                        const wy = r * cellH + 16;
+                        const ww = cellW - 36;
+                        const wh = cellH - 30;
+                        const glow = ctx.createRadialGradient(wx + ww / 2, wy + wh / 2, 2, wx + ww / 2, wy + wh / 2, ww);
+                        glow.addColorStop(0, '#ffe9b0');
+                        glow.addColorStop(0.55, '#ffb45e');
+                        glow.addColorStop(1, '#5c2c08');
+                        ctx.fillStyle = glow;
+                        ctx.fillRect(wx, wy, ww, wh);
+                    }
+                }
+            }),
+            retail: make(512, 256, (ctx) => {
+                const storeColors = ['#ff5a5a', '#ffe14d', '#69f0ae', '#6ec2ff'];
+                for (let i = 0; i < 4; i++) {
+                    const sx = i * 128;
+                    // Signboard glow
+                    ctx.fillStyle = storeColors[i];
+                    ctx.fillRect(sx + 6, 8, 116, 22);
+                    // Warm display window glow
+                    const winGrad = ctx.createLinearGradient(sx + 8, 88, sx + 8, 245);
+                    winGrad.addColorStop(0, '#fff6d8');
+                    winGrad.addColorStop(0.5, '#ffe9a8');
+                    winGrad.addColorStop(1, '#ffd166');
+                    ctx.fillStyle = winGrad;
+                    ctx.fillRect(sx + 8, 88, 112, 155);
+                    // Dark glass door cutout
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(sx + 48, 115, 32, 128);
+                }
+            })
+        };
+    }
+
     buildSkyAndClouds() {
         // Deep Midnight Starry Sky Dome
         const skyGeo = new THREE.SphereGeometry(2400, 32, 24);
@@ -627,6 +737,34 @@ class CyberBunkerWorld {
             ctx.fill();
         }
         ctx.globalAlpha = 1.0;
+
+        // Luminous Cyberpunk Moon with Soft Halo
+        const mx = 205;
+        const my = 130;
+        const mr = 20;
+        const halo = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 3.4);
+        halo.addColorStop(0, 'rgba(222, 236, 255, 0.95)');
+        halo.addColorStop(0.35, 'rgba(150, 190, 255, 0.28)');
+        halo.addColorStop(1, 'rgba(150, 190, 255, 0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(mx, my, mr * 3.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        const disc = ctx.createRadialGradient(mx - 6, my - 6, 2, mx, my, mr);
+        disc.addColorStop(0, '#f8faff');
+        disc.addColorStop(0.75, '#d6e4ff');
+        disc.addColorStop(1, '#9fb8e8');
+        ctx.fillStyle = disc;
+        ctx.beginPath();
+        ctx.arc(mx, my, mr, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(148, 174, 216, 0.5)';
+        ctx.beginPath(); ctx.arc(mx - 7, my - 2, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mx + 5, my + 6, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mx + 2, my - 9, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mx - 3, my + 10, 2, 0, Math.PI * 2); ctx.fill();
 
         this.skyTex = new THREE.CanvasTexture(this.skyCanvas);
         this.skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: this.skyTex, side: THREE.BackSide, fog: false }));
@@ -761,6 +899,8 @@ class CyberBunkerWorld {
         for (let mz = -540; mz <= 540; mz += 38) {
             // Keep player spawn at (0, 0, 16) clear
             if (Math.abs(mz - 16) < 12) continue;
+            // Keep boss vault plaza at (0, -160) clear
+            if (Math.abs(mz + 160) < 14) continue;
 
             const mTree = new THREE.Group();
             mTree.position.set(0, 0.3, mz);
@@ -1069,6 +1209,18 @@ class CyberBunkerWorld {
         const matHelipad = new THREE.MeshStandardMaterial({ map: this.textures.helipadRoof, roughness: 0.8 });
         const matRoof = new THREE.MeshStandardMaterial({ map: this.textures.roofGravel, roughness: 0.9 });
 
+        // Emissive night windows for neon bloom
+        const applyEmissive = (mat, tex, intensity) => {
+            mat.emissive = new THREE.Color(0xffffff);
+            mat.emissiveMap = tex;
+            mat.emissiveIntensity = intensity;
+        };
+        applyEmissive(matBlue, this.textures.emissiveBlue, 0.9);
+        applyEmissive(matTeal, this.textures.emissiveTeal, 0.95);
+        applyEmissive(matWhite, this.textures.emissiveWhite, 0.85);
+        applyEmissive(matTerra, this.textures.emissiveTerra, 0.9);
+        applyEmissive(matRetail, this.textures.emissiveRetail, 1.0);
+
         // =========================================================================
         // 1. LANDMARK SKYSCRAPERS (FINANCIAL DISTRICT)
         // =========================================================================
@@ -1229,6 +1381,30 @@ class CyberBunkerWorld {
                     bb.position.set(-b.w / 2 - 0.1, 24, 0);
                 }
                 bGroup.add(bb);
+            }
+
+            // Neon corner light strips on tall towers
+            if (b.h >= 70) {
+                const neonCyan = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+                const neonPink = new THREE.MeshBasicMaterial({ color: 0xff2d95 });
+                const stripGeo = new THREE.BoxGeometry(0.5, b.h, 0.5);
+                const stripA = new THREE.Mesh(stripGeo, neonCyan);
+                stripA.position.set(-b.w / 2 - 0.3, b.h / 2, -b.d / 2 - 0.3);
+                const stripB = new THREE.Mesh(stripGeo, neonPink);
+                stripB.position.set(b.w / 2 + 0.3, b.h / 2, b.d / 2 + 0.3);
+                bGroup.add(stripA);
+                bGroup.add(stripB);
+            }
+
+            // Blinking aviation rooftop beacon
+            if (b.h >= 85) {
+                const beacon = new THREE.Mesh(
+                    new THREE.SphereGeometry(1.1, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0xff3333 })
+                );
+                beacon.position.set(0, b.h + 3.2, 0);
+                bGroup.add(beacon);
+                this.beacons.push({ mesh: beacon, phase: Math.random() * Math.PI * 2, speed: 1.4 + Math.random() * 1.2 });
             }
 
             this.scene.add(bGroup);
@@ -1442,6 +1618,9 @@ class CyberBunkerWorld {
         // Streetlights along Sidewalks of Grand Central Boulevard (X = -13 and X = 13)
         for (let lz = -480; lz <= 480; lz += 35) {
             [-13, 13].forEach(lx => {
+                // Keep crypto terminal spot at (-14, 10) clear
+                if (lx === -13 && lz === 10) return;
+
                 const lamp = new THREE.Group();
                 lamp.position.set(lx, 0, lz);
                 lamp.rotation.y = (lx < 0) ? 0 : Math.PI;
@@ -1770,7 +1949,7 @@ class CyberBunkerWorld {
                 }
             },
             'station-crypto-basic': {
-                pos: { x: 34.0, z: -35.0 },
+                pos: { x: -14.0, z: 10.0 },
                 color: 0xffb703,
                 meshCreator: () => {
                     const g = new THREE.Group();
@@ -1798,7 +1977,7 @@ class CyberBunkerWorld {
                 }
             },
             'station-web-sqli': {
-                pos: { x: 232.0, z: -210.0 },
+                pos: { x: 200.0, z: -210.0 },
                 color: 0x00f0ff,
                 meshCreator: () => {
                     const g = new THREE.Group();
@@ -1887,7 +2066,7 @@ class CyberBunkerWorld {
                 }
             },
             'station-rev-keygen': {
-                pos: { x: -34.0, z: 25.0 },
+                pos: { x: 0.0, z: -18.0 },
                 color: 0xff3333,
                 meshCreator: () => {
                     const g = new THREE.Group();
@@ -1901,7 +2080,7 @@ class CyberBunkerWorld {
                 }
             },
             'station-boss-omega': {
-                pos: { x: 0.0, z: -175.0 },
+                pos: { x: 0.0, z: -160.0 },
                 color: 0xb026ff,
                 isBoss: true,
                 meshCreator: () => {
@@ -2004,6 +2183,14 @@ class CyberBunkerWorld {
                 isBlackout ? "danger" : "success"
             );
         }
+
+        // Auto-restore the grid after a dramatic outage window
+        clearTimeout(this.blackoutRestoreTimer);
+        if (isBlackout) {
+            this.blackoutRestoreTimer = setTimeout(() => {
+                this.triggerCityBlackout(false);
+            }, 25000);
+        }
     }
 
     // Dynamic Police Alert & Wanted Level (0 to 5 Stars)
@@ -2072,6 +2259,37 @@ class CyberBunkerWorld {
         }
     }
 
+    buildRainSystem() {
+        const COUNT = 1800;
+        const RANGE = 90;
+        const HEIGHT = 120;
+
+        const positions = new Float32Array(COUNT * 3);
+        this.rainVelocities = new Float32Array(COUNT);
+        for (let i = 0; i < COUNT; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * RANGE * 2;
+            positions[i * 3 + 1] = Math.random() * HEIGHT;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * RANGE * 2;
+            this.rainVelocities[i] = 34 + Math.random() * 18;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const mat = new THREE.PointsMaterial({
+            color: 0x9db8d6,
+            size: 0.16,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        this.rainSystem = new THREE.Points(geo, mat);
+        this.rainSystem.frustumCulled = false;
+        this.scene.add(this.rainSystem);
+    }
+
     update(delta, playerPos, totalScore) {
         const time = performance.now() * 0.001;
 
@@ -2080,6 +2298,31 @@ class CyberBunkerWorld {
             cl.position.x += delta * 4.5;
             if (cl.position.x > 750) cl.position.x = -750;
         });
+
+        // 1b. Ambient rain sheet follows the player
+        if (this.rainSystem && playerPos) {
+            const posArr = this.rainSystem.geometry.attributes.position.array;
+            const windspeed = 6 * delta;
+            for (let i = 0; i < this.rainVelocities.length; i++) {
+                posArr[i * 3] -= windspeed;
+                posArr[i * 3 + 1] -= this.rainVelocities[i] * delta;
+                if (posArr[i * 3 + 1] < 0) {
+                    posArr[i * 3] = playerPos.x + (Math.random() - 0.5) * 180;
+                    posArr[i * 3 + 1] = 110 + Math.random() * 20;
+                    posArr[i * 3 + 2] = playerPos.z + (Math.random() - 0.5) * 180;
+                }
+            }
+            this.rainSystem.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // 1c. Blink rooftop aviation beacons
+        if (this.beacons.length) {
+            this.elapsed += delta;
+            for (let i = 0; i < this.beacons.length; i++) {
+                const b = this.beacons[i];
+                b.mesh.visible = Math.sin(this.elapsed * b.speed + b.phase) > -0.2;
+            }
+        }
 
         // 2. Animate Police Cruisers & Sirens during Wanted Alert
         if (this.policeAlertLevel >= 3) {
