@@ -36,6 +36,11 @@ class CyberHackerAvatar {
             distance: 5.2
         };
 
+        // Ground Elevation Raycaster
+        this.raycaster = new THREE.Raycaster();
+        this.downVector = new THREE.Vector3(0, -1, 0);
+        this.rayOrigin = new THREE.Vector3();
+
         this.buildCyberLeekModel();
         this.setupEventListeners();
         this.scene.add(this.mesh);
@@ -490,14 +495,30 @@ class CyberHackerAvatar {
             this.mesh.rotation.y = this.rotation;
         }
 
+        // Dynamic Ground Elevation via Raycast (Prevents sinking into sidewalks, promenades, or piers!)
+        let targetGroundY = 0.0;
+        if (this.raycaster && window.walkableMeshes && window.walkableMeshes.length > 0) {
+            this.rayOrigin.set(this.position.x, this.position.y + 3.0, this.position.z);
+            this.raycaster.set(this.rayOrigin, this.downVector);
+            this.raycaster.far = 12.0;
+            const hits = this.raycaster.intersectObjects(window.walkableMeshes, false);
+            if (hits.length > 0) {
+                targetGroundY = hits[0].point.y;
+            }
+        }
+
         // Apply Gravity & Ground
         this.velocity.y += this.gravity * dt;
         this.position.y += this.velocity.y * dt;
 
-        if (this.position.y <= 0) {
-            this.position.y = 0;
+        if (this.position.y <= targetGroundY) {
+            this.position.y = targetGroundY;
             this.velocity.y = 0;
             this.isGrounded = true;
+        } else if (this.isGrounded && Math.abs(this.position.y - targetGroundY) < 0.45) {
+            // Smooth step up over curbs / sidewalk elevation
+            this.position.y = targetGroundY;
+            this.velocity.y = 0;
         }
 
         // TRUE CITY METROPOLIS BOUNDS [-500, 500] (Prevents clipping into mountain backdrop cones)

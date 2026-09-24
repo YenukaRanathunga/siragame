@@ -10,6 +10,7 @@ class CyberBunkerWorld {
         this.waterMesh = null;
         this.policeLights = [];
         this.colliders = [];
+        this.walkableMeshes = [];
 
         // Build rich procedural texture palette for vibrant Cities: Skylines aesthetic
         this.textures = this.initProceduralTextures();
@@ -28,8 +29,9 @@ class CyberBunkerWorld {
         this.buildMetropolisVehicles();
         this.buildChallengeStations();
 
-        // Export colliders globally for solid player collision physics
+        // Export colliders and walkable surfaces globally
         window.worldColliders = this.colliders;
+        window.walkableMeshes = this.walkableMeshes;
     }
 
     addBoxCollider(x, z, width, depth) {
@@ -686,6 +688,7 @@ class CyberBunkerWorld {
         baseGround.position.y = -0.02;
         baseGround.receiveShadow = true;
         this.scene.add(baseGround);
+        this.walkableMeshes.push(baseGround);
 
         const roadMat = new THREE.MeshStandardMaterial({
             map: this.textures.darkAsphaltRoad,
@@ -706,6 +709,7 @@ class CyberBunkerWorld {
         mainAvenue.position.set(0, 0.05, 0);
         mainAvenue.receiveShadow = true;
         this.scene.add(mainAvenue);
+        this.walkableMeshes.push(mainAvenue);
 
         // Center Parkway Median (Width 5m: X = -2.5 to 2.5) with lush grass, curb & flowerbeds
         const medianCurbs = new THREE.Mesh(
@@ -715,6 +719,7 @@ class CyberBunkerWorld {
         medianCurbs.position.set(0, 0.14, 0);
         medianCurbs.receiveShadow = true;
         this.scene.add(medianCurbs);
+        this.walkableMeshes.push(medianCurbs);
 
         const medianTurf = new THREE.Mesh(
             new THREE.BoxGeometry(4.4, 0.32, 1200),
@@ -723,6 +728,7 @@ class CyberBunkerWorld {
         medianTurf.position.set(0, 0.16, 0);
         medianTurf.receiveShadow = true;
         this.scene.add(medianTurf);
+        this.walkableMeshes.push(medianTurf);
 
         // Trees & Benches along the Central Median strip
         const medianTreeMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.65 });
@@ -756,6 +762,7 @@ class CyberBunkerWorld {
             sw.position.set(swX, 0.125, 0);
             sw.receiveShadow = true;
             this.scene.add(sw);
+            this.walkableMeshes.push(sw);
         });
 
         // =========================================================================
@@ -768,12 +775,14 @@ class CyberBunkerWorld {
             avMesh.position.set(ax, 0.05, 0);
             avMesh.receiveShadow = true;
             this.scene.add(avMesh);
+            this.walkableMeshes.push(avMesh);
 
             [-11, 11].forEach(swOffset => {
                 const sw = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.25, 1200), swMat);
                 sw.position.set(ax + swOffset, 0.125, 0);
                 sw.receiveShadow = true;
                 this.scene.add(sw);
+                this.walkableMeshes.push(sw);
             });
         });
 
@@ -783,6 +792,7 @@ class CyberBunkerWorld {
         hwMesh.position.set(200, 0.05, 0);
         hwMesh.receiveShadow = true;
         this.scene.add(hwMesh);
+        this.walkableMeshes.push(hwMesh);
 
         // Highway Concrete Barriers & Collider
         const guardMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 });
@@ -810,6 +820,7 @@ class CyberBunkerWorld {
             stMesh.position.set(-80, 0.06, sz);
             stMesh.receiveShadow = true;
             this.scene.add(stMesh);
+            this.walkableMeshes.push(stMesh);
 
             // Zebra Crossings at Central Boulevard intersection
             [-8, 8].forEach(crossZOffset => {
@@ -894,18 +905,19 @@ class CyberBunkerWorld {
         this.scene.add(water);
         this.waterMesh = water;
 
-        // Seawall Promenade with Flagstone paving
+        // Seawall Promenade with Flagstone paving (Aligned to sidewalk level y = 0.25)
         const promenade = new THREE.Mesh(
-            new THREE.BoxGeometry(18, 1.8, 1200),
+            new THREE.BoxGeometry(18, 1.2, 1200),
             new THREE.MeshStandardMaterial({ map: this.textures.concreteSidewalk, roughness: 0.85 })
         );
-        promenade.position.set(221, 0.4, 0);
+        promenade.position.set(221, -0.35, 0);
         promenade.castShadow = true;
         promenade.receiveShadow = true;
         this.scene.add(promenade);
+        this.walkableMeshes.push(promenade);
         this.addBoxCollider(229, 0, 2, 1200); // Seawall drop-off collider
 
-        // 6 Walkable Finger Piers
+        // 6 Walkable Finger Piers (Aligned to promenade height y = 0.25)
         const pierZs = [-350, -210, -70, 70, 210, 350];
         const pierWoodMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85 });
 
@@ -914,12 +926,14 @@ class CyberBunkerWorld {
             const pierW = (idx === 1 || idx === 3) ? 22 : 18;
 
             const pier = new THREE.Group();
-            pier.position.set(220 + pierLen / 2, 0.7, pz);
+            pier.position.set(220 + pierLen / 2, -0.35, pz);
 
-            const deck = new THREE.Mesh(new THREE.BoxGeometry(pierLen, 0.9, pierW), pierWoodMat);
+            const deck = new THREE.Mesh(new THREE.BoxGeometry(pierLen, 1.2, pierW), pierWoodMat);
+            deck.position.y = 0;
             deck.castShadow = true;
             deck.receiveShadow = true;
             pier.add(deck);
+            this.walkableMeshes.push(deck);
 
             // Pilings
             for (let px = -pierLen / 2 + 8; px < pierLen / 2; px += 16) {
@@ -1355,6 +1369,10 @@ class CyberBunkerWorld {
         crossPath.position.set(0, 0.23, 0);
         crossPath.receiveShadow = true;
         parkGroup.add(crossPath);
+
+        this.walkableMeshes.push(turf);
+        this.walkableMeshes.push(mainPath);
+        this.walkableMeshes.push(crossPath);
 
         // 120+ Lush Green Park Trees with Varied Canopy Tones
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 });
