@@ -31,6 +31,7 @@ foreach ($fn in $fileNames) {
 
 $payload = @{
     name = "ghostbit-3d"
+    target = "production"
     files = $filesList
     projectSettings = @{
         framework = $null
