@@ -1,4 +1,4 @@
-// Main Game Controller, Radar Minimap, and Dual Mode Handler
+// Main Game Controller, Radar Minimap, Codex, Certificate, and Fast Travel Handler
 
 class CyberCTFGame {
     constructor() {
@@ -12,6 +12,7 @@ class CyberCTFGame {
         this.currentViewMode = '3d'; // '3d' or 'dashboard'
         this.nearbyTerminal = null;
         this.isInteracting = false;
+        this.selectedTier = 'all';
 
         this.init();
     }
@@ -36,7 +37,7 @@ class CyberCTFGame {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 0.98;
+        this.renderer.toneMappingExposure = 1.05;
 
         // 3. Build World & Player
         this.world = new CyberBunkerWorld(this.scene);
@@ -52,19 +53,76 @@ class CyberCTFGame {
         this.animate();
     }
 
+    showBannerNotification(message, type = 'info') {
+        const banner = document.getElementById('world-event-banner');
+        if (!banner) return;
+        banner.innerText = message;
+        banner.className = `world-event-banner show ${type}`;
+        setTimeout(() => {
+            banner.className = 'world-event-banner hidden';
+        }, 5500);
+    }
+
     setupUI() {
-        // Mission Pill click & TAB hotkey for Dashboard
+        // Mission Pill click & TAB / M hotkeys for Dashboard
         const missionsPill = document.getElementById('pill-missions');
         if (missionsPill) {
             missionsPill.addEventListener('click', () => this.toggleDashboard());
         }
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            if (e.key === 'Tab' || e.code === 'KeyM') {
                 e.preventDefault();
                 this.toggleDashboard();
+            } else if (e.code === 'KeyC') {
+                this.toggleCodex();
+            } else if (e.code === 'KeyG') {
+                this.toggleCertificate();
             }
         });
+
+        // Tier Filter in Dashboard
+        document.querySelectorAll('.tier-filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tier-filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.selectedTier = e.target.dataset.tier;
+                this.renderDashboard();
+                if (window.sounds) window.sounds.playClick();
+            });
+        });
+
+        // Cyber Codex Modal
+        const btnOpenCodex = document.getElementById('btn-open-codex');
+        const modalCodex = document.getElementById('codex-modal');
+        const btnCloseCodex = document.getElementById('btn-close-codex');
+
+        if (btnOpenCodex) btnOpenCodex.addEventListener('click', () => this.toggleCodex(true));
+        if (btnCloseCodex) btnCloseCodex.addEventListener('click', () => this.toggleCodex(false));
+
+        document.querySelectorAll('.codex-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.codex-tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                const target = e.target.dataset.codex;
+                document.querySelectorAll('.codex-content').forEach(c => c.classList.add('hidden'));
+                const show = document.getElementById(`codex-${target}`);
+                if (show) show.classList.remove('hidden');
+                if (window.sounds) window.sounds.playClick();
+            });
+        });
+
+        // Certificate Modal
+        const btnOpenCert = document.getElementById('btn-open-cert');
+        const modalCert = document.getElementById('certificate-modal');
+        const btnCloseCert = document.getElementById('btn-close-cert');
+        const btnRenderCert = document.getElementById('btn-render-cert');
+
+        if (btnOpenCert) btnOpenCert.addEventListener('click', () => this.toggleCertificate(true));
+        if (btnCloseCert) btnCloseCert.addEventListener('click', () => this.toggleCertificate(false));
+        if (btnRenderCert) btnRenderCert.addEventListener('click', () => this.updateCertificateDisplay());
 
         // Sound Mute Toggle
         const btnAudio = document.getElementById('btn-toggle-audio');
@@ -125,11 +183,10 @@ class CyberCTFGame {
             if (res.success) {
                 if (window.sounds) window.sounds.playSuccess();
                 if (window.confetti) {
-                    window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    window.confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
                 }
                 resultFlag.className = 'flag-result-box success';
                 resultFlag.innerHTML = `✔ ${res.message}`;
-                // Refresh dashboard if visible
                 this.renderDashboard();
             } else {
                 if (window.sounds) window.sounds.playError();
@@ -157,6 +214,8 @@ class CyberCTFGame {
             } else if (e.code === 'Escape') {
                 window.terminalUI.closeTerminal();
                 if (modalHelp) modalHelp.classList.add('hidden');
+                if (modalCodex) modalCodex.classList.add('hidden');
+                if (modalCert) modalCert.classList.add('hidden');
             }
         });
 
@@ -166,6 +225,50 @@ class CyberCTFGame {
                 window.sounds.startAmbient();
             }
         }, { once: true });
+    }
+
+    toggleCodex(forceOpen) {
+        const modal = document.getElementById('codex-modal');
+        if (!modal) return;
+        const shouldOpen = forceOpen !== undefined ? forceOpen : modal.classList.contains('hidden');
+        modal.classList.toggle('hidden', !shouldOpen);
+        if (window.sounds) window.sounds.playClick();
+    }
+
+    toggleCertificate(forceOpen) {
+        const modal = document.getElementById('certificate-modal');
+        if (!modal) return;
+        const shouldOpen = forceOpen !== undefined ? forceOpen : modal.classList.contains('hidden');
+        modal.classList.toggle('hidden', !shouldOpen);
+        if (shouldOpen) this.updateCertificateDisplay();
+        if (window.sounds) window.sounds.playClick();
+    }
+
+    updateCertificateDisplay() {
+        const nameInp = document.getElementById('cert-student-name');
+        const nameDisp = document.getElementById('cert-display-name');
+        const rankDisp = document.getElementById('cert-display-rank');
+        const solvedDisp = document.getElementById('cert-display-solved');
+        const scoreDisp = document.getElementById('cert-display-score');
+        const dateDisp = document.getElementById('cert-display-date');
+
+        const score = window.challengeManager.score;
+        const solved = window.challengeManager.solvedCount;
+        const playable = window.challengeManager.challenges.filter(c => !c.isDecoy).length;
+
+        let rank = "CADET OPERATIVE (TIER 1)";
+        if (score >= 1400) rank = "RED TEAM MASTER OPERATOR (TIER 4)";
+        else if (score >= 700) rank = "SECURITY SPECIALIST (TIER 3)";
+        else if (score >= 300) rank = "CYBER DEFENDER (TIER 2)";
+
+        if (nameDisp) nameDisp.innerText = nameInp ? nameInp.value || 'Cyber Cadet' : 'Cyber Cadet';
+        if (rankDisp) rankDisp.innerText = rank;
+        if (solvedDisp) solvedDisp.innerText = `${solved} / ${playable}`;
+        if (scoreDisp) scoreDisp.innerText = `${score} PTS`;
+        if (dateDisp) dateDisp.innerText = new Date().toISOString().split('T')[0];
+
+        const dashClear = document.getElementById('dash-clearance-status');
+        if (dashClear) dashClear.innerText = rank;
     }
 
     switchTo3D() {
@@ -189,6 +292,19 @@ class CyberCTFGame {
             this.switchTo3D();
         }
         if (window.sounds) window.sounds.playClick();
+    }
+
+    teleportToStation(stationId) {
+        const ch = window.challengeManager.getChallenge(stationId);
+        if (!ch || !ch.pos) return;
+
+        if (this.player) {
+            this.player.teleportTo(ch.pos.x, ch.pos.z + 3.0);
+        }
+
+        this.switchTo3D();
+        if (window.sounds) window.sounds.playInteract();
+        this.showBannerNotification(`⚡ FAST TRAVEL: Teleported to ${ch.title}`, 'info');
     }
 
     onWindowResize() {
@@ -240,90 +356,32 @@ class CyberCTFGame {
         const ctx = canvas.getContext('2d');
         const size = canvas.width;
         const center = size / 2;
-        const scale = (size - 16) / 1200; // 1200m (1.2km) metropolis scale
+        const scale = (size - 16) / 1200;
 
-        // Clear background (Dark urban base)
-        ctx.fillStyle = 'rgba(14, 18, 26, 0.95)';
+        // Clear background
+        ctx.fillStyle = 'rgba(10, 14, 22, 0.95)';
         ctx.fillRect(0, 0, size, size);
 
-        // 1. Eastern Ocean Harbor Bay
+        // 1. Ocean Bay
         const oceanX = center + 220 * scale;
-        ctx.fillStyle = '#166986';
+        ctx.fillStyle = '#0f293d';
         ctx.fillRect(oceanX, 4, size - 4 - oceanX, size - 8);
 
-        // 2. Walkable Finger Piers extending into Ocean
-        const pierZs = [-350, -210, -70, 70, 210, 350];
-        ctx.fillStyle = '#6b7280';
-        pierZs.forEach((pz, idx) => {
-            const py = center + pz * scale;
-            const pw = 95 * scale;
-            const ph = Math.max(3, 16 * scale);
-            ctx.fillRect(oceanX, py - ph/2, pw, ph);
-
-            // Docked Ships on Pier 2 (Cruise Liner) & Pier 4 (Cargo Ship)
-            if (idx === 1) { // Cruise Liner at Pier 2
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(oceanX + 15 * scale, py + ph/2 + 1, 110 * scale, 12 * scale);
-                ctx.fillStyle = '#6b7280'; // restore
-            } else if (idx === 3) { // Cargo Ship at Pier 4
-                ctx.fillStyle = '#dc2626';
-                ctx.fillRect(oceanX + 15 * scale, py - ph/2 - 13 * scale, 95 * scale, 11 * scale);
-                ctx.fillStyle = '#6b7280'; // restore
-            }
-        });
-
-        // 3. Central Park (West District)
+        // 2. Central Park
         const cpX = center + (-480) * scale;
         const cpY = center + (-250) * scale;
-        const cpW = 320 * scale;
-        const cpH = 500 * scale;
-        ctx.fillStyle = '#2d6a4f';
-        ctx.fillRect(cpX, cpY, cpW, cpH);
+        ctx.fillStyle = '#143828';
+        ctx.fillRect(cpX, cpY, 320 * scale, 500 * scale);
 
-        // Central Park Lake
-        ctx.fillStyle = '#1b4d3e';
-        ctx.beginPath();
-        ctx.arc(cpX + cpW * 0.5, cpY + cpH * 0.5, 18 * scale, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 4. Urban Road Grid (Asphalt Gray)
-        ctx.fillStyle = '#374151';
-        const roadW = Math.max(2, 14 * scale);
-        const hwW = Math.max(3, 22 * scale);
-
-        // Waterfront Coastal Highway (along x = 200)
-        const hwX = center + 200 * scale;
-        ctx.fillRect(hwX - hwW/2, 4, hwW, size - 8);
-
-        // North-South Avenues (Including Grand Central Boulevard at X = 0)
+        // 3. Roads
+        ctx.fillStyle = '#1f2937';
         const avenues = [-400, -260, -130, 0, 130];
         avenues.forEach(ax => {
             const rx = center + ax * scale;
-            const w = (ax === 0) ? roadW * 1.3 : roadW;
-            ctx.fillRect(rx - w/2, 4, w, size - 8);
+            ctx.fillRect(rx - 2, 4, 4, size - 8);
         });
 
-        // East-West Cross Streets
-        const streets = [-450, -320, -190, -60, 70, 200, 330, 460];
-        streets.forEach(sz => {
-            const ry = center + sz * scale;
-            ctx.fillRect(4, ry - roadW/2, oceanX - 4, roadW);
-        });
-
-        // Highway Yellow Lines
-        ctx.strokeStyle = '#f5b700';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(hwX, 4);
-        ctx.lineTo(hwX, size - 4);
-        ctx.stroke();
-
-        // Outer 1.2 KM Boundary
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(4, 4, size - 8, size - 8);
-
-        // Draw Infiltration Targets
+        // 4. Targets
         const challenges = window.challengeManager ? window.challengeManager.challenges : [];
         challenges.forEach(ch => {
             if (!ch.pos) return;
@@ -331,39 +389,26 @@ class CyberCTFGame {
             const mapY = center + ch.pos.z * scale;
 
             ctx.beginPath();
-            ctx.arc(mapX, mapY, 3.5, 0, Math.PI * 2);
+            ctx.arc(mapX, mapY, ch.isDecoy ? 2.5 : 3.5, 0, Math.PI * 2);
             ctx.fillStyle = ch.solved ? '#00ff66' : (ch.color || '#ff007f');
-            ctx.shadowColor = ch.solved ? '#00ff66' : '#ff007f';
-            ctx.shadowBlur = 4;
             ctx.fill();
-            ctx.shadowBlur = 0;
-
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
         });
 
-        // Draw Player Arrow (GTA V style)
+        // 5. Player Arrow
         if (this.player) {
             const playerX = center + this.player.position.x * scale;
             const playerY = center + this.player.position.z * scale;
-            const angle = this.player.rotation;
-
             ctx.save();
             ctx.translate(playerX, playerY);
-            ctx.rotate(angle);
-
+            ctx.rotate(this.player.rotation);
             ctx.beginPath();
-            ctx.moveTo(0, 6.5);
-            ctx.lineTo(-4, -4.5);
-            ctx.lineTo(4, -4.5);
+            ctx.moveTo(0, 6);
+            ctx.lineTo(-4, -4);
+            ctx.lineTo(4, -4);
             ctx.closePath();
             ctx.fillStyle = '#00f0ff';
-            ctx.shadowColor = '#00f0ff';
-            ctx.shadowBlur = 5;
             ctx.fill();
-            ctx.shadowBlur = 0;
-
+            ctx.restore();
         }
     }
 
@@ -372,7 +417,12 @@ class CyberCTFGame {
         if (!grid) return;
 
         grid.innerHTML = '';
-        const challenges = window.challengeManager.challenges;
+        let challenges = window.challengeManager.challenges;
+
+        if (this.selectedTier !== 'all') {
+            const tierNum = parseInt(this.selectedTier);
+            challenges = challenges.filter(c => c.tier === tierNum || (c.isDecoy && tierNum === 1));
+        }
 
         challenges.forEach(ch => {
             const card = document.createElement('div');
@@ -381,18 +431,24 @@ class CyberCTFGame {
                 <div class="dash-card-header" style="border-left-color: ${ch.color}">
                     <span class="dash-icon">${ch.icon}</span>
                     <span class="dash-cat" style="color: ${ch.color}">${ch.category}</span>
-                    <span class="dash-points">+${ch.points} PTS</span>
+                    <span class="dash-points">${ch.isDecoy ? 'UTILITY' : '+' + ch.points + ' PTS'}</span>
                 </div>
                 <div class="dash-card-body">
+                    <div class="dash-tier-badge tier-${ch.tier || 1}">${ch.tierName ? 'TIER ' + ch.tier + ': ' + ch.tierName : 'UTILITY RELAY'}</div>
                     <h4>${ch.title}</h4>
                     <p class="dash-summary">${ch.summary}</p>
                     <div class="dash-card-footer mt-3">
                         <span class="dash-status-badge ${ch.solved ? 'solved' : 'pending'}">
                             ${ch.solved ? '✔ COMPLETED' : '● PENDING'}
                         </span>
-                        <button class="cyber-btn sm" onclick="window.game.openTerminalDirectly('${ch.id}')">
-                            ${ch.solved ? 'VIEW INTEL' : 'SOLVE CHALLENGE'}
-                        </button>
+                        <div class="dash-btn-group">
+                            <button class="cyber-btn sm primary" onclick="window.game.teleportToStation('${ch.id}')" title="Instant GPS Teleport">
+                                ⚡ TELEPORT
+                            </button>
+                            <button class="cyber-btn sm" onclick="window.game.openTerminalDirectly('${ch.id}')">
+                                ${ch.solved ? 'VIEW INTEL' : 'HACK'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -411,19 +467,10 @@ class CyberCTFGame {
         const delta = this.clock.getDelta();
 
         if (this.currentViewMode === '3d') {
-            // Update 3D player movement & camera
             this.player.update(delta, this.camera);
-
-            // Update world animations & laser barriers
             this.world.update(delta, this.player.position, window.challengeManager.score);
-
-            // Check proximity to workstations
             this.checkTerminalProximity();
-
-            // Render Radar Minimap
             this.renderRadarMinimap();
-
-            // Render 3D Scene
             this.renderer.render(this.scene, this.camera);
         }
     }

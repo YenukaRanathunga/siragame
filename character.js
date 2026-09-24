@@ -588,11 +588,17 @@ class CyberHackerAvatar {
 
             const camX = this.position.x + dist * Math.sin(theta) * Math.cos(phi);
             const camY = this.position.y + 1.8 + dist * Math.sin(phi);
-            const camZ = this.position.z + dist * Math.cos(theta) * Math.cos(phi);
-
             camera.position.set(camX, camY, camZ);
             camera.lookAt(this.position.x, this.position.y + 1.4, this.position.z);
         }
+    }
+
+    teleportTo(x, z) {
+        this.position.x = x;
+        this.position.z = z;
+        this.position.y = 0.5;
+        this.velocity.set(0, 0, 0);
+        this.mesh.position.copy(this.position);
     }
 }
 

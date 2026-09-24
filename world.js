@@ -11,8 +11,16 @@ class CyberBunkerWorld {
         this.policeLights = [];
         this.colliders = [];
         this.walkableMeshes = [];
+        this.streetLightMaterials = [];
+        this.streetPointLights = [];
+        this.policeCruisers = [];
+        this.policeAlertLevel = 0;
+        this.policeHelicopter = null;
+        this.isBlackout = false;
+        this.billboardCanvas = null;
+        this.billboardTexture = null;
 
-        // Build rich procedural texture palette for vibrant Cities: Skylines aesthetic
+        // Build rich procedural texture palette for vibrant Cyberpunk Night aesthetic
         this.textures = this.initProceduralTextures();
 
         this.initAtmosphere();
@@ -28,10 +36,12 @@ class CyberBunkerWorld {
         this.buildStreetPropsAndLighting();
         this.buildMetropolisVehicles();
         this.buildChallengeStations();
+        this.buildPoliceHelicopter();
 
         // Export colliders and walkable surfaces globally
         window.worldColliders = this.colliders;
         window.walkableMeshes = this.walkableMeshes;
+        window.world = this;
     }
 
     addBoxCollider(x, z, width, depth) {
@@ -44,32 +54,32 @@ class CyberBunkerWorld {
     }
 
     initAtmosphere() {
-        // Crisp, vivid atmospheric depth (Fog pushed far out so city is crystal clear & vibrant)
-        this.scene.fog = new THREE.Fog(0x82b9e8, 700, 3200);
+        // Deep Midnight Indigo Fog
+        this.scene.fog = new THREE.Fog(0x060913, 300, 2400);
 
-        // Bright, crisp high-noon sunlight (High contrast, sharp shadows, non-washed-out)
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.45);
-        sunLight.position.set(240, 450, 180);
-        sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
-        sunLight.shadow.camera.near = 10;
-        sunLight.shadow.camera.far = 1400;
-        sunLight.shadow.camera.left = -400;
-        sunLight.shadow.camera.right = 400;
-        sunLight.shadow.camera.top = 400;
-        sunLight.shadow.camera.bottom = -400;
-        sunLight.shadow.bias = -0.0003;
-        this.scene.add(sunLight);
+        // Moonlight (Silvery blue, sharp shadows, cinematic night contrast)
+        this.sunLight = new THREE.DirectionalLight(0x93c5fd, 0.85);
+        this.sunLight.position.set(240, 450, 180);
+        this.sunLight.castShadow = true;
+        this.sunLight.shadow.mapSize.width = 2048;
+        this.sunLight.shadow.mapSize.height = 2048;
+        this.sunLight.shadow.camera.near = 10;
+        this.sunLight.shadow.camera.far = 1400;
+        this.sunLight.shadow.camera.left = -400;
+        this.sunLight.shadow.camera.right = 400;
+        this.sunLight.shadow.camera.top = 400;
+        this.sunLight.shadow.camera.bottom = -400;
+        this.sunLight.shadow.bias = -0.0003;
+        this.scene.add(this.sunLight);
 
-        // Vibrant Sky & Ground Bounce (Rich azure sky bounce and lush grass bounce)
-        const hemiLight = new THREE.HemisphereLight(0x5ba4e6, 0x2e7d32, 0.72);
-        this.scene.add(hemiLight);
+        // Vibrant Night Sky & City Glow Bounce
+        this.hemiLight = new THREE.HemisphereLight(0x1e293b, 0x090d16, 0.55);
+        this.scene.add(this.hemiLight);
 
-        // Subtle ambient fill to keep deep shadows crisp
-        const fillLight = new THREE.DirectionalLight(0xbbdefb, 0.25);
-        fillLight.position.set(-200, 250, -200);
-        this.scene.add(fillLight);
+        // Subtle ambient blue fill
+        this.fillLight = new THREE.DirectionalLight(0x1e3a8a, 0.35);
+        this.fillLight.position.set(-200, 250, -200);
+        this.scene.add(this.fillLight);
     }
 
     initProceduralTextures() {
@@ -523,7 +533,9 @@ class CyberBunkerWorld {
         ctx.arc(382, 175, 32, 0, Math.PI * 2);
         ctx.fill();
 
-        return new THREE.CanvasTexture(c);
+        this.billboardCanvas = c;
+        this.billboardTexture = new THREE.CanvasTexture(c);
+        return this.billboardTexture;
     }
 
     // 11. Modern Rooftop Helipad Texture (Red Cross / Yellow H)
@@ -588,27 +600,40 @@ class CyberBunkerWorld {
     }
 
     buildSkyAndClouds() {
-        // Deep Azure Summer Sky Dome
+        // Deep Midnight Starry Sky Dome
         const skyGeo = new THREE.SphereGeometry(2400, 32, 24);
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 512;
-        const ctx = canvas.getContext('2d');
+        this.skyCanvas = document.createElement('canvas');
+        this.skyCanvas.width = 256;
+        this.skyCanvas.height = 512;
+        const ctx = this.skyCanvas.getContext('2d');
 
         const grad = ctx.createLinearGradient(0, 0, 0, 512);
-        grad.addColorStop(0.0, '#0d47a1'); // Deep sapphire blue
-        grad.addColorStop(0.3, '#1976d2');
-        grad.addColorStop(0.65, '#42a5f5'); // Vibrant azure
-        grad.addColorStop(1.0, '#90caf9'); // Soft bright horizon
+        grad.addColorStop(0.0, '#020617'); // Cosmic midnight zenith
+        grad.addColorStop(0.35, '#0a0f1d'); // Midnight navy
+        grad.addColorStop(0.7, '#0f172a'); // Slate indigo
+        grad.addColorStop(1.0, '#1e1b4b'); // Cyberpunk violet horizon
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 256, 512);
 
-        const skyTex = new THREE.CanvasTexture(canvas);
-        const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false }));
-        this.scene.add(sky);
+        // Hundreds of twinkling stars
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 450; i++) {
+            const sx = Math.random() * 256;
+            const sy = Math.random() * 340;
+            const r = Math.random() < 0.15 ? 1.4 : 0.75;
+            ctx.globalAlpha = 0.35 + Math.random() * 0.65;
+            ctx.beginPath();
+            ctx.arc(sx, sy, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
 
-        // Fluffy 3D White Cumulus Clouds
-        const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+        this.skyTex = new THREE.CanvasTexture(this.skyCanvas);
+        this.skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: this.skyTex, side: THREE.BackSide, fog: false }));
+        this.scene.add(this.skyMesh);
+
+        // Moody 3D Night Clouds
+        const cloudMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95, flatShading: true });
         for (let i = 0; i < 22; i++) {
             const cloud = new THREE.Group();
             const puffs = 7 + Math.floor(Math.random() * 5);
@@ -1411,7 +1436,8 @@ class CyberBunkerWorld {
     buildStreetPropsAndLighting() {
         const poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
         const lampHeadMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
-        const lightGlowMat = new THREE.MeshStandardMaterial({ color: 0xfff3b0, emissive: 0xffe680, emissiveIntensity: 0.9 });
+        const lightGlowMat = new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffb703, emissiveIntensity: 2.2 });
+        this.streetLightMaterials.push(lightGlowMat);
 
         // Streetlights along Sidewalks of Grand Central Boulevard (X = -13 and X = 13)
         for (let lz = -480; lz <= 480; lz += 35) {
@@ -1436,6 +1462,13 @@ class CyberBunkerWorld {
                 const panel = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.05, 0.35), lightGlowMat);
                 panel.position.set(1.5, 5.95, 0);
                 lamp.add(panel);
+
+                if (Math.abs(lz) % 70 === 0) {
+                    const streetP = new THREE.PointLight(0xffb703, 1.2, 28);
+                    streetP.position.set(1.5, 5.5, 0);
+                    lamp.add(streetP);
+                    this.streetPointLights.push(streetP);
+                }
 
                 this.scene.add(lamp);
                 this.addBoxCollider(lx, lz, 0.5, 0.5);
@@ -1607,19 +1640,164 @@ class CyberBunkerWorld {
 
     createPoliceVehicle() {
         const cruiser = this.createVehicleMesh(0x0f172a);
-        const pLight = new THREE.PointLight(0xff0022, 1.8, 18);
-        pLight.position.set(0, 2.2, -0.2);
-        cruiser.add(pLight);
-        this.policeLights.push(pLight);
+
+        // Police Lightbar on Roof
+        const barGeo = new THREE.BoxGeometry(1.4, 0.18, 0.35);
+        const barMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+        const lightbar = new THREE.Mesh(barGeo, barMat);
+        lightbar.position.set(0, 1.95, -0.2);
+        cruiser.add(lightbar);
+
+        // Red Strobe Lens (Left)
+        const rMat = new THREE.MeshStandardMaterial({ color: 0xff0033, emissive: 0xff0033, emissiveIntensity: 0.5 });
+        const rMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.16, 0.3), rMat);
+        rMesh.position.set(-0.35, 1.96, -0.2);
+        cruiser.add(rMesh);
+
+        // Blue Strobe Lens (Right)
+        const bMat = new THREE.MeshStandardMaterial({ color: 0x0066ff, emissive: 0x0066ff, emissiveIntensity: 0.5 });
+        const bMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.16, 0.3), bMat);
+        bMesh.position.set(0.35, 1.96, -0.2);
+        cruiser.add(bMesh);
+
+        // Dual Flashing Pointlights
+        const rLight = new THREE.PointLight(0xff0033, 0.0, 18);
+        rLight.position.set(-0.35, 2.2, -0.2);
+        cruiser.add(rLight);
+
+        const bLight = new THREE.PointLight(0x0066ff, 0.0, 18);
+        bLight.position.set(0.35, 2.2, -0.2);
+        cruiser.add(bLight);
+
+        this.policeCruisers.push({
+            mesh: cruiser,
+            rLight: rLight,
+            bLight: bLight,
+            rMat: rMat,
+            bMat: bMat,
+            baseZ: cruiser.position.z,
+            dir: 1,
+            speed: 22
+        });
+
         return cruiser;
+    }
+
+    buildPoliceHelicopter() {
+        const heli = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
+        const rotorMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+
+        // Fuselage
+        const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 5.5), bodyMat);
+        body.position.y = 1.1;
+        heli.add(body);
+
+        // Tail Boom
+        const tail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 6.0), bodyMat);
+        tail.position.set(0, 1.4, -4.8);
+        heli.add(tail);
+
+        // Main Rotor Mast & Blades
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8), rotorMat);
+        mast.position.set(0, 2.4, 0);
+        heli.add(mast);
+
+        const rotor = new THREE.Group();
+        rotor.position.set(0, 2.8, 0);
+        const blade1 = new THREE.Mesh(new THREE.BoxGeometry(11.0, 0.06, 0.65), rotorMat);
+        rotor.add(blade1);
+        const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 11.0), rotorMat);
+        rotor.add(blade2);
+        heli.add(rotor);
+
+        // High-Intensity Police Searchlight
+        const spot = new THREE.SpotLight(0xffffff, 0.0, 240, Math.PI / 6, 0.45);
+        spot.position.set(0, 0, 1.8);
+        spot.castShadow = true;
+        heli.add(spot);
+
+        const spotTarget = new THREE.Object3D();
+        this.scene.add(spotTarget);
+        spot.target = spotTarget;
+
+        heli.position.set(0, 65, 0);
+        heli.visible = false;
+        this.scene.add(heli);
+
+        this.policeHelicopter = {
+            mesh: heli,
+            rotor: rotor,
+            spotLight: spot,
+            target: spotTarget
+        };
     }
 
     buildChallengeStations() {
         const challenges = window.CHALLENGES_DATA || [];
 
         const stationConfigs = {
-            'station-web': {
-                title: "Pier 2 Cruise Liner Terminal",
+            'station-linux-novice': {
+                pos: { x: -14.0, z: -10.0 },
+                color: 0x00ff66,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const table = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+                    table.position.y = 0.45;
+                    g.add(table);
+                    const laptop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.5), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+                    laptop.position.set(0, 0.92, 0);
+                    g.add(laptop);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.03), new THREE.MeshStandardMaterial({ color: 0x00ff66, emissive: 0x00ff66, emissiveIntensity: 1.2 }));
+                    screen.position.set(0, 1.15, -0.2);
+                    screen.rotation.x = -0.2;
+                    g.add(screen);
+                    return { root: g, holo: screen };
+                }
+            },
+            'station-web-recon': {
+                pos: { x: -26.0, z: 80.0 },
+                color: 0x00f0ff,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 2.2, 12), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+                    pole.position.y = 1.1;
+                    g.add(pole);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 0.1), new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 1.2 }));
+                    screen.position.set(0, 1.9, 0);
+                    g.add(screen);
+                    return { root: g, holo: screen };
+                }
+            },
+            'station-crypto-basic': {
+                pos: { x: 34.0, z: -35.0 },
+                color: 0xffb703,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const atm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.8, 1.0), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6 }));
+                    atm.position.y = 1.4;
+                    g.add(atm);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.65, 0.05), new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 1.2 }));
+                    screen.position.set(0, 1.7, 0.52);
+                    g.add(screen);
+                    return { root: g, holo: screen };
+                }
+            },
+            'station-power-grid': {
+                pos: { x: -65.0, z: -120.0 },
+                color: 0xef4444,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const transformer = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.2, 1.8), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 }));
+                    transformer.position.y = 1.6;
+                    g.add(transformer);
+                    const panel = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.0, 0.1), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 1.4 }));
+                    panel.position.set(0, 2.0, 0.95);
+                    g.add(panel);
+                    return { root: g, holo: panel };
+                }
+            },
+            'station-web-sqli': {
                 pos: { x: 232.0, z: -210.0 },
                 color: 0x00f0ff,
                 meshCreator: () => {
@@ -1627,36 +1805,46 @@ class CyberBunkerWorld {
                     const table = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
                     table.position.y = 0.45;
                     g.add(table);
-
                     const laptop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.5), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
                     laptop.position.set(0, 0.92, 0);
                     g.add(laptop);
-
-                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.03), new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.9 }));
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.03), new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 1.2 }));
                     screen.position.set(0, 1.15, -0.2);
                     screen.rotation.x = -0.2;
                     g.add(screen);
                     return { root: g, holo: screen };
                 }
             },
-            'station-crypto': {
-                title: "Wall Street Spire Bank ATM",
-                pos: { x: 34.0, z: -35.0 }, // Placed directly on East Boulevard sidewalk!
-                color: 0xffb703,
+            'station-net-pcap': {
+                pos: { x: 16.0, z: 12.0 },
+                color: 0xff007f,
                 meshCreator: () => {
                     const g = new THREE.Group();
-                    const atm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.8, 1.0), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6 }));
-                    atm.position.y = 1.4;
-                    g.add(atm);
-
-                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.65, 0.05), new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.85 }));
-                    screen.position.set(0, 1.7, 0.52);
+                    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 1.4, 16), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+                    pedestal.position.y = 0.7;
+                    g.add(pedestal);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.55, 0.05), new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 1.2 }));
+                    screen.position.set(0, 1.6, 0);
                     g.add(screen);
                     return { root: g, holo: screen };
                 }
             },
-            'station-linux': {
-                title: "Central Park Telecom Pavilion",
+            'station-broadcast': {
+                pos: { x: 65.0, z: 120.0 },
+                color: 0xa855f7,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.8, 4.2, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 }));
+                    tower.position.y = 2.1;
+                    g.add(tower);
+                    const dish = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0xa855f7, emissiveIntensity: 1.3, side: THREE.DoubleSide }));
+                    dish.position.set(0, 4.2, 0);
+                    dish.rotateX(Math.PI / 3);
+                    g.add(dish);
+                    return { root: g, holo: dish };
+                }
+            },
+            'station-linux-privesc': {
                 pos: { x: -300.0, z: 0.0 },
                 color: 0x00ff66,
                 meshCreator: () => {
@@ -1664,44 +1852,56 @@ class CyberBunkerWorld {
                     const box = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, 1.0), new THREE.MeshStandardMaterial({ color: 0x14532d, metalness: 0.4 }));
                     box.position.y = 1.2;
                     g.add(box);
-
-                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.05), new THREE.MeshStandardMaterial({ color: 0x00ff66, emissive: 0x00ff66, emissiveIntensity: 0.9 }));
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.05), new THREE.MeshStandardMaterial({ color: 0x00ff66, emissive: 0x00ff66, emissiveIntensity: 1.2 }));
                     screen.position.set(0, 1.4, 0.52);
                     g.add(screen);
                     return { root: g, holo: screen };
                 }
             },
-            'station-forensics': {
-                title: "Highway Police Cruiser Terminal",
-                pos: { x: 195.0, z: 50.0 },
-                color: 0xff007f,
+            'station-crypto-hash': {
+                pos: { x: -80.0, z: 180.0 },
+                color: 0xf59e0b,
                 meshCreator: () => {
                     const g = new THREE.Group();
-                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.05), new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 0.9 }));
-                    screen.position.set(0, 1.6, 0.4);
+                    const rack = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.0, 1.2), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }));
+                    rack.position.y = 1.5;
+                    g.add(rack);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 0.05), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.2 }));
+                    screen.position.set(0, 1.8, 0.62);
                     g.add(screen);
                     return { root: g, holo: screen };
                 }
             },
-            'station-rev': {
-                title: "Chinatown Heritage Arcade",
-                pos: { x: -34.0, z: 25.0 }, // Placed directly on West Boulevard sidewalk!
+            'station-web-xss': {
+                pos: { x: 180.0, z: -80.0 },
+                color: 0x3b82f6,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const kiosk = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.6, 0.9), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+                    kiosk.position.y = 1.3;
+                    g.add(kiosk);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.05), new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 1.2 }));
+                    screen.position.set(0, 1.7, 0.48);
+                    g.add(screen);
+                    return { root: g, holo: screen };
+                }
+            },
+            'station-rev-keygen': {
+                pos: { x: -34.0, z: 25.0 },
                 color: 0xff3333,
                 meshCreator: () => {
                     const g = new THREE.Group();
                     const arcade = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.7, 1.0), new THREE.MeshStandardMaterial({ color: 0x3b0764 }));
                     arcade.position.y = 1.35;
                     g.add(arcade);
-
-                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.65, 0.05), new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0xff3333, emissiveIntensity: 0.9 }));
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.65, 0.05), new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0xff3333, emissiveIntensity: 1.2 }));
                     screen.position.set(0, 1.7, 0.52);
                     g.add(screen);
                     return { root: g, holo: screen };
                 }
             },
-            'station-boss': {
-                title: "Metropolis Vault Blast Gate",
-                pos: { x: 0.0, z: -175.0 }, // Placed at the Flatiron Plaza landmark!
+            'station-boss-omega': {
+                pos: { x: 0.0, z: -175.0 },
                 color: 0xb026ff,
                 isBoss: true,
                 meshCreator: () => {
@@ -1709,16 +1909,28 @@ class CyberBunkerWorld {
                     const frame = new THREE.Mesh(new THREE.BoxGeometry(8, 9, 1.5), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85 }));
                     frame.position.y = 4.5;
                     g.add(frame);
-
                     const door = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.8, 32), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 }));
                     door.rotateX(Math.PI / 2);
                     door.position.set(0, 4.5, 0.6);
                     g.add(door);
-
                     const wheel = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.12, 12, 24), new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.9 }));
                     wheel.position.set(0, 4.5, 1.1);
                     g.add(wheel);
                     return { root: g, holo: wheel };
+                }
+            },
+            'station-decoy-proxy': {
+                pos: { x: -32.0, z: 45.0 },
+                color: 0x22c55e,
+                meshCreator: () => {
+                    const g = new THREE.Group();
+                    const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.6), new THREE.MeshStandardMaterial({ color: 0x166534 }));
+                    box.position.y = 0.8;
+                    g.add(box);
+                    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 1.5 }));
+                    antenna.position.set(0, 2.0, 0);
+                    g.add(antenna);
+                    return { root: g, holo: antenna };
                 }
             }
         };
@@ -1762,24 +1974,148 @@ class CyberBunkerWorld {
         });
     }
 
+    // Dynamic City Power Grid Blackout Event
+    triggerCityBlackout(isBlackout = true) {
+        this.isBlackout = isBlackout;
+
+        // 1. Extinguish or illuminate streetlights
+        this.streetLightMaterials.forEach(mat => {
+            mat.emissiveIntensity = isBlackout ? 0.0 : 2.2;
+            mat.color.setHex(isBlackout ? 0x222222 : 0xffd166);
+        });
+        this.streetPointLights.forEach(p => {
+            p.intensity = isBlackout ? 0.0 : 1.2;
+        });
+
+        // 2. Dim Sky & Lighting to pitch-black emergency level
+        if (this.sunLight) this.sunLight.intensity = isBlackout ? 0.15 : 0.85;
+        if (this.hemiLight) this.hemiLight.intensity = isBlackout ? 0.12 : 0.55;
+        if (this.fillLight) this.fillLight.intensity = isBlackout ? 0.05 : 0.35;
+
+        // 3. Audio & Banner Trigger
+        if (isBlackout && window.sounds) {
+            window.sounds.playBlackoutSurge();
+        }
+        if (window.game && typeof window.game.showBannerNotification === 'function') {
+            window.game.showBannerNotification(
+                isBlackout
+                    ? "⚡ [CRITICAL SCADA FAILURE] METROPOLIS POWER GRID COLLAPSE // CITY BLACKOUT ACTIVE!"
+                    : "✔ POWER GRID RESTORED // METROPOLIS LIGHTS ONLINE",
+                isBlackout ? "danger" : "success"
+            );
+        }
+    }
+
+    // Dynamic Police Alert & Wanted Level (0 to 5 Stars)
+    setPoliceAlertLevel(level = 0) {
+        this.policeAlertLevel = level;
+
+        // Toggle Helicopter
+        if (this.policeHelicopter) {
+            this.policeHelicopter.mesh.visible = (level >= 4);
+            this.policeHelicopter.spotLight.intensity = (level >= 4) ? 5.5 : 0.0;
+        }
+
+        // Toggle Cruiser Lightbars
+        this.policeCruisers.forEach(pc => {
+            if (level === 0) {
+                pc.rLight.intensity = 0.0;
+                pc.bLight.intensity = 0.0;
+                pc.rMat.emissiveIntensity = 0.1;
+                pc.bMat.emissiveIntensity = 0.1;
+            }
+        });
+    }
+
+    // Dynamic Electronic Billboard Takeover
+    triggerBillboardTakeover() {
+        if (!this.billboardCanvas || !this.billboardTexture) return;
+
+        const ctx = this.billboardCanvas.getContext('2d');
+        ctx.fillStyle = '#050b14';
+        ctx.fillRect(0, 0, 512, 256);
+
+        // Neon Green Matrix Cyberpunk Grid
+        ctx.strokeStyle = 'rgba(0, 255, 102, 0.25)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < 512; x += 32) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 256); ctx.stroke();
+        }
+
+        // Left Billboard: Hacker Skull & Compromised Notice
+        ctx.fillStyle = '#00ff66';
+        ctx.font = '900 24px monospace';
+        ctx.fillText('⚡ GHOSTBIT TAKEOVER', 25, 70);
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillText('NETWORK OVERRIDE: ACTIVE', 25, 105);
+        ctx.fillText('NEXUS SYNDICATE PWNED', 25, 130);
+        ctx.fillStyle = '#ff007f';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText('ACCESS ROOT // CTF SECURED', 25, 160);
+
+        // Right Billboard: Freedom Cyber Signal
+        ctx.fillStyle = '#00f0ff';
+        ctx.font = '900 24px monospace';
+        ctx.fillText('CITIZENS OF METROPOLIS', 275, 70);
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('SURVEILLANCE GRID IS DOWN', 275, 105);
+        ctx.fillStyle = '#00ff66';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText('CTF{skyway_billboard_broadcast_hijacked}', 275, 140);
+
+        this.billboardTexture.needsUpdate = true;
+
+        if (window.game && typeof window.game.showBannerNotification === 'function') {
+            window.game.showBannerNotification("📺 [BROADCAST HIJACK] GHOSTBIT NETWORK TAKEOVER DISPLAYED CITY-WIDE!", "success");
+        }
+    }
+
     update(delta, playerPos, totalScore) {
         const time = performance.now() * 0.001;
 
+        // 1. Drift clouds across the night sky
         this.clouds.forEach(cl => {
             cl.position.x += delta * 4.5;
-            if (cl.position.x > 750) {
-                cl.position.x = -750;
-            }
+            if (cl.position.x > 750) cl.position.x = -750;
         });
 
-        this.policeLights.forEach(pl => {
-            const isRed = Math.floor(time * 6) % 2 === 0;
-            pl.color.setHex(isRed ? 0xff0022 : 0x00f0ff);
-        });
+        // 2. Animate Police Cruisers & Sirens during Wanted Alert
+        if (this.policeAlertLevel >= 3) {
+            const isRed = Math.floor(time * 9) % 2 === 0;
+            this.policeCruisers.forEach(pc => {
+                pc.rLight.intensity = isRed ? 2.5 : 0.0;
+                pc.bLight.intensity = isRed ? 0.0 : 2.5;
+                pc.rMat.emissiveIntensity = isRed ? 2.5 : 0.2;
+                pc.bMat.emissiveIntensity = isRed ? 0.2 : 2.5;
 
+                // Move cruisers along road
+                pc.mesh.position.z += pc.dir * pc.speed * delta;
+                if (pc.mesh.position.z > 220) { pc.dir = -1; pc.mesh.rotation.y = Math.PI; }
+                if (pc.mesh.position.z < -220) { pc.dir = 1; pc.mesh.rotation.y = 0; }
+            });
+        }
+
+        // 3. Animate Police Searchlight Helicopter during High Heat
+        if (this.policeAlertLevel >= 4 && this.policeHelicopter && playerPos) {
+            // Spin main rotor
+            this.policeHelicopter.rotor.rotation.y += delta * 24.0;
+
+            // Follow player overhead with slight sway
+            const targetX = playerPos.x + Math.sin(time * 0.8) * 15;
+            const targetZ = playerPos.z + Math.cos(time * 0.8) * 15;
+            this.policeHelicopter.mesh.position.x += (targetX - this.policeHelicopter.mesh.position.x) * delta * 0.8;
+            this.policeHelicopter.mesh.position.z += (targetZ - this.policeHelicopter.mesh.position.z) * delta * 0.8;
+
+            // Point searchlight down at player
+            this.policeHelicopter.target.position.set(playerPos.x, 0, playerPos.z);
+        }
+
+        // 4. Animate Terminal holographic pedestals & rings
         this.terminals.forEach(t => {
             if (t.holo && t.holo.material && t.holo.material.emissiveIntensity) {
-                t.holo.material.emissiveIntensity = 0.8 + Math.sin(time * 6) * 0.15;
+                t.holo.material.emissiveIntensity = 0.9 + Math.sin(time * 6) * 0.2;
             }
             if (t.ring) {
                 t.ring.rotation.z += delta * 0.6;
@@ -1789,3 +2125,4 @@ class CyberBunkerWorld {
 }
 
 window.CyberBunkerWorld = CyberBunkerWorld;
+

@@ -199,6 +199,155 @@ class SoundManager {
         osc.start(now);
         osc.stop(now + 0.12);
     }
+
+    // Dynamic Police Siren (Authentic dual-tone wailing siren)
+    startPoliceSiren() {
+        if (this.isMuted || this.sirenActive) return;
+        this.init();
+        try {
+            this.sirenActive = true;
+            this.sirenOsc = this.ctx.createOscillator();
+            this.sirenGain = this.ctx.createGain();
+            this.sirenOsc.type = 'sawtooth';
+
+            const now = this.ctx.currentTime;
+            this.sirenGain.gain.setValueAtTime(0.001, now);
+            this.sirenGain.gain.linearRampToValueAtTime(0.09, now + 0.5);
+
+            // Modulate pitch between 620Hz and 980Hz
+            this.sirenLfo = this.ctx.createOscillator();
+            this.sirenLfoGain = this.ctx.createGain();
+            this.sirenLfo.frequency.setValueAtTime(1.4, now); // Siren wail cycle speed
+            this.sirenLfoGain.gain.setValueAtTime(180, now);
+            this.sirenOsc.frequency.setValueAtTime(800, now);
+
+            this.sirenLfo.connect(this.sirenLfoGain);
+            this.sirenLfoGain.connect(this.sirenOsc.frequency);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1800, now);
+
+            this.sirenOsc.connect(filter);
+            filter.connect(this.sirenGain);
+            this.sirenGain.connect(this.masterGain);
+
+            this.sirenOsc.start(now);
+            this.sirenLfo.start(now);
+        } catch (e) {
+            console.warn("Siren audio error:", e);
+        }
+    }
+
+    stopPoliceSiren() {
+        if (!this.sirenActive || !this.sirenGain) return;
+        try {
+            const now = this.ctx.currentTime;
+            this.sirenGain.gain.linearRampToValueAtTime(0.0001, now + 0.4);
+            setTimeout(() => {
+                if (this.sirenOsc) {
+                    try { this.sirenOsc.stop(); this.sirenOsc.disconnect(); } catch (e) {}
+                }
+                if (this.sirenLfo) {
+                    try { this.sirenLfo.stop(); this.sirenLfo.disconnect(); } catch (e) {}
+                }
+                this.sirenActive = false;
+            }, 450);
+        } catch (e) {
+            this.sirenActive = false;
+        }
+    }
+
+    // Heavy Substation Grid Blackout Surge & Power-Down Hum
+    playBlackoutSurge() {
+        if (this.isMuted) return;
+        this.init();
+        try {
+            const now = this.ctx.currentTime;
+            // 1. Heavy power transformer blowout sub-bass
+            const subOsc = this.ctx.createOscillator();
+            const subGain = this.ctx.createGain();
+            subOsc.type = 'sawtooth';
+            subOsc.frequency.setValueAtTime(160, now);
+            subOsc.frequency.exponentialRampToValueAtTime(22, now + 1.8);
+            subGain.gain.setValueAtTime(0.35, now);
+            subGain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+
+            const subFilter = this.ctx.createBiquadFilter();
+            subFilter.type = 'lowpass';
+            subFilter.frequency.setValueAtTime(320, now);
+            subFilter.frequency.exponentialRampToValueAtTime(40, now + 1.8);
+
+            subOsc.connect(subFilter);
+            subFilter.connect(subGain);
+            subGain.connect(this.masterGain);
+
+            subOsc.start(now);
+            subOsc.stop(now + 2.0);
+
+            // 2. High-voltage electrical spark burst
+            const bufSize = this.ctx.sampleRate * 0.4;
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.25));
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.setValueAtTime(1200, now);
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.25, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(this.masterGain);
+            noise.start(now);
+        } catch (e) {
+            console.warn("Blackout audio error:", e);
+        }
+    }
+
+    // Radio Police Dispatch / Heat Cleared Static Chime
+    playRadioStatic() {
+        if (this.isMuted) return;
+        this.init();
+        try {
+            const now = this.ctx.currentTime;
+            // Short burst of filtered white noise squelch
+            const bufSize = this.ctx.sampleRate * 0.12;
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(2200, now);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.masterGain);
+            noise.start(now);
+
+            // Followed by clear beep
+            const osc = this.ctx.createOscillator();
+            const bGain = this.ctx.createGain();
+            osc.frequency.setValueAtTime(880, now + 0.1);
+            bGain.gain.setValueAtTime(0.08, now + 0.1);
+            bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.connect(bGain);
+            bGain.connect(this.masterGain);
+            osc.start(now + 0.1);
+            osc.stop(now + 0.22);
+        } catch (e) {}
+    }
 }
 
 window.sounds = new SoundManager();
+

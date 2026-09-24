@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GHOSTBIT // 3D Open-World CTF Platform</title>
+    <title>GHOSTBIT // 3D Open-World CTF & Cyber Range</title>
     <!-- Google Fonts for Cyberpunk & Terminal Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.2">
+    <link rel="stylesheet" href="style.css?v=4.0">
 </head>
 <body>
 
@@ -22,15 +22,21 @@
         </div>
 
         <div class="header-right">
+            <div class="stat-pill wanted-pill" id="pill-wanted" title="Police Wanted Level (Heat)">
+                <span class="stat-label">HEAT:</span>
+                <span id="hud-wanted-stars" class="wanted-stars">☆☆☆☆☆</span>
+            </div>
             <div class="stat-pill">
                 <span class="stat-label">SCORE:</span>
                 <span id="hud-score" class="stat-val cyber-cyan">0</span>
                 <span class="stat-unit">PTS</span>
             </div>
-            <div class="stat-pill" id="pill-missions" title="Click to view Missions (or press TAB)">
+            <div class="stat-pill" id="pill-missions" title="Click to view Missions & Fast Travel (or press TAB)">
                 <span class="stat-label">MISSIONS:</span>
-                <span id="hud-solved" class="stat-val cyber-green">0/6</span>
+                <span id="hud-solved" class="stat-val cyber-green">0/12</span>
             </div>
+            <button id="btn-open-codex" class="cyber-btn sm" title="University Cyber Codex & Cheatsheet (Press C)">📖 CODEX</button>
+            <button id="btn-open-cert" class="cyber-btn sm" title="Academic Cyber Certificate (Press G)">🎓 CERTIFICATE</button>
             <button id="btn-toggle-audio" class="cyber-btn sm">🔊 SOUND: ON</button>
             <button id="btn-open-help" class="cyber-btn sm">❓ HELP</button>
         </div>
@@ -40,13 +46,16 @@
     <main id="game-container-3d" class="game-viewport">
         <canvas id="game-canvas"></canvas>
 
+        <!-- World Event Notification Banner -->
+        <div id="world-event-banner" class="world-event-banner hidden"></div>
+
         <!-- Crosshair in center -->
         <div class="crosshair-indicator"></div>
 
         <!-- Radar Minimap Overlay -->
         <div class="radar-wrapper">
             <div class="radar-header">
-                <span>FACILITY RADAR</span>
+                <span>METROPOLIS RADAR</span>
                 <span class="radar-live-dot"></span>
             </div>
             <canvas id="radar-canvas" width="150" height="150"></canvas>
@@ -62,9 +71,10 @@
             <span><strong>WASD</strong> Move</span>
             <span><strong>Shift</strong> Sprint</span>
             <span><strong>Space</strong> Jump</span>
-            <span><strong>Mouse</strong> Look</span>
-            <span><strong>E</strong> Hack Terminal</span>
-            <span><strong>V</strong> 1st/3rd View</span>
+            <span><strong>E</strong> Hack / Interact</span>
+            <span><strong>C</strong> Codex</span>
+            <span><strong>G</strong> Certificate</span>
+            <span><strong>Tab/M</strong> Missions & Teleport</span>
         </div>
 
         <!-- Dynamic Proximity Prompt -->
@@ -91,27 +101,33 @@
                 </div>
                 <div class="dash-stat-card">
                     <span class="label">SYSTEMS OVERRIDDEN</span>
-                    <span id="dash-solved-count" class="num cyber-green">0/6</span>
+                    <span id="dash-solved-count" class="num cyber-green">0/12</span>
                     <span class="sub">Completed Stations</span>
                 </div>
                 <div class="dash-stat-card">
                     <span class="label">CLEARANCE STATUS</span>
-                    <span class="num cyber-yellow">AGENT LEVEL 1</span>
-                    <span class="sub">Requires 500 PTS for Omega Core</span>
+                    <span id="dash-clearance-status" class="num cyber-yellow">AGENT LEVEL 1</span>
+                    <span class="sub">Requires 600 PTS for Omega Core</span>
                 </div>
                 <div class="dash-stat-card">
-                    <span class="label">WORLD SIMULATOR</span>
+                    <span class="label">ACTIONS</span>
                     <button class="cyber-btn primary mt-1" onclick="window.game.switchTo3D();">
-                        RETURN TO GHOSTBIT 3D →
+                        RETURN TO 3D CITY →
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Challenge Cards Grid -->
+        <!-- Tier Track Selector -->
         <div class="dash-section-header">
-            <h2>ACTIVE CHALLENGE STATIONS</h2>
-            <span class="text-dim">Click any station to analyze intel and submit flag tokens</span>
+            <h2>CURRICULUM TRACKS & CHALLENGES</h2>
+            <div class="tier-filter-row">
+                <button class="tier-filter-btn active" data-tier="all">ALL TRACKS</button>
+                <button class="tier-filter-btn" data-tier="1">🟢 TIER 1: NOVICE</button>
+                <button class="tier-filter-btn" data-tier="2">🟡 TIER 2: INTERMEDIATE</button>
+                <button class="tier-filter-btn" data-tier="3">🟠 TIER 3: ADVANCED</button>
+                <button class="tier-filter-btn" data-tier="4">🔴 TIER 4: MASTER</button>
+            </div>
         </div>
 
         <div id="dash-challenges-grid" class="dash-grid">
@@ -138,28 +154,28 @@
                         <td><span class="rank-badge gold">#1</span></td>
                         <td><strong>ZeroCool_99</strong></td>
                         <td>BlackHat Division</td>
-                        <td>6 / 6</td>
-                        <td><span class="cyber-cyan font-bold">1500 PTS</span></td>
+                        <td>12 / 12</td>
+                        <td><span class="cyber-cyan font-bold">2970 PTS</span></td>
                     </tr>
                     <tr class="rank-2">
                         <td><span class="rank-badge silver">#2</span></td>
                         <td><strong>AcidBurn</strong></td>
                         <td>Crypto Analysts</td>
-                        <td>5 / 6</td>
-                        <td><span class="cyber-cyan font-bold">1000 PTS</span></td>
+                        <td>10 / 12</td>
+                        <td><span class="cyber-cyan font-bold">2200 PTS</span></td>
                     </tr>
                     <tr class="rank-3">
                         <td><span class="rank-badge bronze">#3</span></td>
                         <td><strong>GhostInTheShell</strong></td>
                         <td>Exploit Ops</td>
-                        <td>4 / 6</td>
-                        <td><span class="cyber-cyan font-bold">700 PTS</span></td>
+                        <td>8 / 12</td>
+                        <td><span class="cyber-cyan font-bold">1650 PTS</span></td>
                     </tr>
                     <tr class="rank-you">
                         <td><span class="rank-badge you">#4</span></td>
-                        <td><strong>YOU (CyberAgent)</strong></td>
+                        <td><strong>YOU (Ghostbit Operative)</strong></td>
                         <td>Infiltrator Unit</td>
-                        <td id="table-solved">0 / 6</td>
+                        <td id="table-solved">0 / 12</td>
                         <td><span id="table-score" class="cyber-green font-bold">0 PTS</span></td>
                     </tr>
                 </tbody>
@@ -178,6 +194,7 @@
                         <span id="terminal-title">STATION TERMINAL</span>
                     </div>
                     <div class="topbar-actions">
+                        <span id="terminal-tier-badge" class="badge">TIER</span>
                         <span id="terminal-category-badge" class="badge">CATEGORY</span>
                         <span id="terminal-points-badge" class="badge points">+100 PTS</span>
                         <button id="btn-close-terminal" class="close-x-btn">✕</button>
@@ -188,7 +205,8 @@
                 <div class="terminal-tabs">
                     <button class="terminal-tab-btn active" data-tab="briefing">1. MISSION INTEL</button>
                     <button class="terminal-tab-btn" data-tab="target">2. INTERACTIVE TARGET</button>
-                    <button class="terminal-tab-btn" data-tab="hints">3. DECRYPTOR HINT</button>
+                    <button class="terminal-tab-btn" data-tab="theory">3. UNIVERSITY THEORY & DEFENSE</button>
+                    <button class="terminal-tab-btn" data-tab="hints">4. DECRYPTOR HINTS</button>
                 </div>
 
                 <!-- Tab 1: Briefing -->
@@ -201,7 +219,12 @@
                     <div id="terminal-interactive-container"></div>
                 </div>
 
-                <!-- Tab 3: Hints -->
+                <!-- Tab 3: University Theory & Defense -->
+                <div id="tab-theory" class="terminal-tab-body hidden">
+                    <div id="terminal-theory-content" class="briefing-box"></div>
+                </div>
+
+                <!-- Tab 4: Hints -->
                 <div id="tab-hints" class="terminal-tab-body hidden">
                     <div class="hint-box">
                         <h4>[ ENCRYPTED ADVISORY NOTE ]</h4>
@@ -220,7 +243,140 @@
         </div>
     </div>
 
-    <!-- 4. HELP & CONTROLS MODAL -->
+    <!-- 4. CYBER CODEX & CHEATSHEET MODAL -->
+    <div id="codex-modal" class="terminal-overlay hidden">
+        <div class="help-box codex-box">
+            <div class="help-header">
+                <h3>📖 UNIVERSITY CYBER CODEX // FIELD CHEATSHEET</h3>
+                <button id="btn-close-codex" class="close-x-btn">✕</button>
+            </div>
+            <div class="help-body">
+                <div class="codex-nav-tabs">
+                    <button class="codex-tab-btn active" data-codex="linux">🐧 Linux Commands</button>
+                    <button class="codex-tab-btn" data-codex="ports">🌐 Common Ports</button>
+                    <button class="codex-tab-btn" data-codex="web">💉 SQLi & XSS Payloads</button>
+                    <button class="codex-tab-btn" data-codex="crypto">🔐 Crypto & Encodings</button>
+                </div>
+
+                <!-- Linux Tab -->
+                <div id="codex-linux" class="codex-content">
+                    <h4>Top Linux Commands for Cybersecurity & Penetration Testing</h4>
+                    <table class="codex-table">
+                        <tr><th>Command</th><th>Usage Description</th></tr>
+                        <tr><td><code>ls -la</code></td><td>List all files including hidden dotfiles with permissions & sizes</td></tr>
+                        <tr><td><code>grep -rnw '/path' -e 'pattern'</code></td><td>Search recursively for specific strings or keywords</td></tr>
+                        <tr><td><code>find / -perm -4000 2>/dev/null</code></td><td>Locate all SUID binaries on the filesystem</td></tr>
+                        <tr><td><code>sudo -l</code></td><td>Audit allowed sudo commands for current user</td></tr>
+                        <tr><td><code>cat /etc/passwd</code></td><td>View list of all local system users</td></tr>
+                        <tr><td><code>ss -tulpn / netstat -tulpn</code></td><td>List open listening network ports and binding addresses</td></tr>
+                        <tr><td><code>base64 -d file.txt</code></td><td>Decode Base64 encoded payload file</td></tr>
+                    </table>
+                </div>
+
+                <!-- Ports Tab -->
+                <div id="codex-ports" class="codex-content hidden">
+                    <h4>Standard Networking Ports & Protocols (CompTIA / CEH Reference)</h4>
+                    <table class="codex-table">
+                        <tr><th>Port</th><th>Protocol</th><th>Security Implications</th></tr>
+                        <tr><td>21</td><td>FTP</td><td>Cleartext file transfer (vulnerable to sniffing & anonymous access)</td></tr>
+                        <tr><td>22</td><td>SSH</td><td>Encrypted remote shell (check for weak keys or brute force)</td></tr>
+                        <tr><td>25</td><td>SMTP</td><td>Mail transfer (check for open mail relaying)</td></tr>
+                        <tr><td>53</td><td>DNS</td><td>Domain name lookup (zone transfers & DNS exfiltration)</td></tr>
+                        <tr><td>80 / 443</td><td>HTTP / HTTPS</td><td>Web applications (audit for OWASP Top 10 vulnerabilities)</td></tr>
+                        <tr><td>3306</td><td>MySQL</td><td>Database service (check for default credentials or external binding)</td></tr>
+                        <tr><td>8080</td><td>HTTP-Alt</td><td>Common web proxy or staging environment port</td></tr>
+                    </table>
+                </div>
+
+                <!-- Web Exploits Tab -->
+                <div id="codex-web" class="codex-content hidden">
+                    <h4>SQL Injection & Cross-Site Scripting Cheatsheet</h4>
+                    <table class="codex-table">
+                        <tr><th>Vulnerability</th><th>Test Payload</th><th>Mitigation</th></tr>
+                        <tr><td>SQLi Auth Bypass</td><td><code>admin' OR '1'='1' --</code></td><td>PreparedStatements with Parameterized Queries</td></tr>
+                        <tr><td>SQLi Union Based</td><td><code>' UNION SELECT null, username, password FROM users --</code></td><td>Strict input validation & ORM usage</td></tr>
+                        <tr><td>Reflected XSS</td><td><code>&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code></td><td>Context-aware HTML entity encoding</td></tr>
+                        <tr><td>Cookie Stealing XSS</td><td><code>&lt;img src=x onerror="fetch('/log?c='+document.cookie)"&gt;</code></td><td>HttpOnly cookie flag & Content Security Policy (CSP)</td></tr>
+                    </table>
+                </div>
+
+                <!-- Crypto Tab -->
+                <div id="codex-crypto" class="codex-content hidden">
+                    <h4>Cryptographic Hash Lengths & Encoding Reference</h4>
+                    <table class="codex-table">
+                        <tr><th>Algorithm</th><th>Hash Length</th><th>Security Status</th></tr>
+                        <tr><td>MD5</td><td>32 Hex Characters (128-bit)</td><td>Broken (Do NOT use for passwords)</td></tr>
+                        <tr><td>SHA-1</td><td>40 Hex Characters (160-bit)</td><td>Deprecated (Collision vulnerable)</td></tr>
+                        <tr><td>SHA-256</td><td>64 Hex Characters (256-bit)</td><td>Secure for integrity; requires salt for passwords</td></tr>
+                        <tr><td>bcrypt / Argon2</td><td>Adaptive Work Factor</td><td>Industry Standard for user password hashing</td></tr>
+                        <tr><td>Base64</td><td>Padded with <code>=</code> or <code>==</code></td><td>Encoding only (ZERO secrecy)</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. ACADEMIC CERTIFICATE GENERATOR MODAL -->
+    <div id="certificate-modal" class="terminal-overlay hidden">
+        <div class="cert-modal-box">
+            <div class="cert-modal-header">
+                <h3>🎓 ACADEMIC CYBERSECURITY CERTIFICATE OF ACHIEVEMENT</h3>
+                <button id="btn-close-cert" class="close-x-btn">✕</button>
+            </div>
+            <div class="cert-modal-body">
+                <div class="cert-controls">
+                    <label>OPERATIVE / STUDENT NAME:</label>
+                    <input type="text" id="cert-student-name" value="Cyber Cadet" placeholder="Enter Full Name">
+                    <button class="cyber-btn primary" id="btn-render-cert">UPDATE CERTIFICATE</button>
+                    <button class="cyber-btn" onclick="window.print();">🖨️ PRINT / EXPORT PDF</button>
+                </div>
+
+                <!-- Printable Certificate Container -->
+                <div id="printable-certificate" class="certificate-paper">
+                    <div class="cert-border-outer">
+                        <div class="cert-border-inner">
+                            <div class="cert-top-emblem">🛡️ GHOSTBIT DEFENSE ACADEMY 🛡️</div>
+                            <h1 class="cert-title">CERTIFICATE OF CYBERSPACE OPERATIONS</h1>
+                            <p class="cert-subtitle">This is officially conferred upon</p>
+                            <h2 id="cert-display-name" class="cert-candidate-name">Cyber Cadet</h2>
+                            <p class="cert-desc">For successfully demonstrating tactical proficiency in Vulnerability Assessment, Network Forensics, Reverse Engineering, Cryptanalysis, and Industrial Control Systems Penetration Testing in the Ghostbit 3D Metropolis Cyber Range.</p>
+                            
+                            <div class="cert-meta-row">
+                                <div class="cert-meta-col">
+                                    <span class="label">SECURITY CLEARANCE</span>
+                                    <span id="cert-display-rank" class="val">OPERATOR LEVEL 1</span>
+                                </div>
+                                <div class="cert-meta-col">
+                                    <span class="label">STATIONS NEUTRALIZED</span>
+                                    <span id="cert-display-solved" class="val">0 / 12</span>
+                                </div>
+                                <div class="cert-meta-col">
+                                    <span class="label">TOTAL MERIT POINTS</span>
+                                    <span id="cert-display-score" class="val">0 PTS</span>
+                                </div>
+                                <div class="cert-meta-col">
+                                    <span class="label">ISSUE DATE</span>
+                                    <span id="cert-display-date" class="val">2026-09-24</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-footer-row">
+                                <div class="cert-seal-badge">
+                                    <div class="seal-inner">★ OFFICIAL ACADEMIC CYBER SEAL ★</div>
+                                </div>
+                                <div class="cert-signature">
+                                    <div class="sig-line">Ghostbit Defense Grid Command</div>
+                                    <span class="sig-title">Division of Cyber Operations</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. HELP & CONTROLS MODAL -->
     <div id="help-modal" class="terminal-overlay hidden">
         <div class="help-box">
             <div class="help-header">
@@ -228,29 +384,22 @@
                 <button id="btn-close-help" class="close-x-btn">✕</button>
             </div>
             <div class="help-body">
-                <h4>🕹️ HOW TO PLAY (3D MODE):</h4>
+                <h4>🕹️ HOW TO PLAY (3D CYBER METROPOLIS):</h4>
                 <ul>
-                    <li><strong>WASD / Arrow Keys:</strong> Walk & navigate around the cyberpunk bunker.</li>
-                    <li><strong>Shift:</strong> Sprint for high-speed locomotion.</li>
-                    <li><strong>Spacebar:</strong> Jump over conduits or obstacles.</li>
-                    <li><strong>Mouse Look / Drag:</strong> Rotate 360° camera orbit. Scroll to zoom.</li>
-                    <li><strong>Key E:</strong> Walk close to any glowing workstation and press <code>E</code> to hack into the terminal.</li>
-                    <li><strong>Key V:</strong> Switch between Third-Person and First-Person camera views!</li>
+                    <li><strong>WASD / Arrow Keys:</strong> Walk & navigate through the cyberpunk city.</li>
+                    <li><strong>Shift:</strong> Sprint for high-speed tactical movement.</li>
+                    <li><strong>Spacebar:</strong> Jump onto curbs or over obstacles.</li>
+                    <li><strong>Key E:</strong> Walk close to any glowing terminal and press <code>E</code> to hack it.</li>
+                    <li><strong>Key C:</strong> Open the University Cyber Codex & Cheatsheet library!</li>
+                    <li><strong>Key G:</strong> Generate your official Cybersecurity Certificate of Achievement!</li>
+                    <li><strong>Tab / Key M:</strong> Open Mission Board with <strong>Fast GPS Teleportation</strong> to any station!</li>
                 </ul>
 
-                <h4 class="mt-3">🎯 CTF CHALLENGE GOALS:</h4>
-                <p>There are 6 stations inside the bunker:</p>
-                <ol>
-                    <li><strong>Web Exploitation:</strong> SQL injection authentication bypass.</li>
-                    <li><strong>Cryptography:</strong> Multi-layer ROT13 and Base64 cipher decoder.</li>
-                    <li><strong>Linux PrivEsc:</strong> Fully simulated interactive bash shell.</li>
-                    <li><strong>Digital Forensics:</strong> Inspect raw network packet hex streams.</li>
-                    <li><strong>Reverse Engineering:</strong> Decompiled mathematical serial keygen puzzle.</li>
-                    <li><strong>Omega Supercomputer:</strong> Central boss vault. Unlocks once you acquire 500+ PTS!</li>
-                </ol>
+                <h4 class="mt-3">⚠️ POLICE WANTED HEAT SYSTEM:</h4>
+                <p>Entering incorrect flag tokens or triggering alarms increases your <strong>Wanted Level (1 to 5 Stars)</strong>. Police cruisers will patrol with sirens and flashing lights, and a search helicopter will track you. Visit the <strong>Alleyway Decoy Proxy Node</strong> to purge your heat!</p>
 
-                <h4 class="mt-3">🌐 WEB DASHBOARD:</h4>
-                <p>Use the <strong>"📊 WEB DASHBOARD"</strong> tab in the top navigation bar to view all challenges, check the scoreboard, and inspect challenges in traditional web portal format!</p>
+                <h4 class="mt-3">⚡ CITY POWER GRID BLACKOUT:</h4>
+                <p>Overriding the Sector 04 Substation plunges the entire metropolis into total blackout!</p>
             </div>
         </div>
     </div>
@@ -260,11 +409,11 @@
     <script src="confetti.browser.min.js"></script>
 
     <!-- Game Scripts (Cache-Busting Enabled) -->
-    <script src="audio.js?v=3.3"></script>
-    <script src="challenges.js?v=3.3"></script>
-    <script src="character.js?v=3.3"></script>
-    <script src="world.js?v=3.3"></script>
-    <script src="terminal-ui.js?v=3.3"></script>
-    <script src="game.js?v=3.3"></script>
+    <script src="audio.js?v=4.0"></script>
+    <script src="challenges.js?v=4.0"></script>
+    <script src="character.js?v=4.0"></script>
+    <script src="world.js?v=4.0"></script>
+    <script src="terminal-ui.js?v=4.0"></script>
+    <script src="game.js?v=4.0"></script>
 </body>
 </html>
