@@ -14,7 +14,7 @@ if (-not $Token) {
 }
 
 $root = $PSScriptRoot
-$fileNames = @("index.html", "style.css", "game.js", "character.js", "world.js", "terminal-ui.js", "challenges.js", "audio.js", "three.min.js", "confetti.browser.min.js", "vercel.json")
+$fileNames = @("index.html", "style.css", "game.js", "character.js", "world.js", "terminal-ui.js", "challenges.js", "audio.js", "three.min.js", "confetti.browser.min.js", "CopyShader.js", "LuminosityHighPassShader.js", "Pass.js", "ShaderPass.js", "EffectComposer.js", "RenderPass.js", "UnrealBloomPass.js", "vercel.json")
 $filesList = @()
 
 foreach ($fn in $fileNames) {
