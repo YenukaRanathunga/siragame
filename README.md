@@ -33,6 +33,7 @@ python -m http.server 8080
 | **Shift** | Sprint (High speed locomotion) |
 | **Spacebar** | Jump |
 | **Mouse Drag** | 360° Camera orbit / Scroll to zoom |
+| **On-screen arrows** | D-pad (bottom-left) to walk, LOOK pad (bottom-right) to turn / tilt, `+` and `−` to zoom, plus **JUMP**, **RUN**, **HACK**, **VIEW** buttons. Tap-and-hold, works on touch and mouse. |
 | **Key E** | Access / Hack terminal when close to a station |
 | **Key V** | Toggle between **3rd-Person** and **1st-Person** camera views |
 | **Key N** | Toggle the **Day / Night** lighting cycle |

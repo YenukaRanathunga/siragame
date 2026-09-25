@@ -28,6 +28,10 @@ class CyberHackerAvatar {
         this.animTime = 0;
         this.isMoving = false;
 
+        // On-screen (touch/click) controls feed these
+        this.touchLook = { theta: 0, phi: 0 };
+        this.zoomInput = 0;
+
         // Camera: Third Person (Cinematic Over-The-Shoulder) & First Person
         this.cameraMode = (window.gameSettings && window.gameSettings.load().cameraMode) || 'tpv';
         this.cameraAngle = {
@@ -357,17 +361,10 @@ class CyberHackerAvatar {
                     this.keys.sprint = true;
                     break;
                 case 'Space':
-                    if (this.isGrounded) {
-                        this.velocity.y = this.jumpForce;
-                        this.isGrounded = false;
-                        if (window.sounds) window.sounds.playJump();
-                    }
+                    this.pressJump();
                     break;
                 case 'KeyV':
-                    this.cameraMode = (this.cameraMode === 'tpv') ? 'fpv' : 'tpv';
-                    this.mesh.visible = (this.cameraMode === 'tpv');
-                    if (window.gameSettings) window.gameSettings.save({ cameraMode: this.cameraMode });
-                    if (window.sounds) window.sounds.playClick();
+                    this.toggleCameraMode();
                     break;
             }
         });
@@ -435,8 +432,40 @@ class CyberHackerAvatar {
         }
     }
 
+    // On-screen control pad feeds the same state as keyboard + mouse drag
+    setMoveKey(name, active) {
+        if (name in this.keys) this.keys[name] = !!active;
+    }
+
+    toggleCameraMode() {
+        this.cameraMode = (this.cameraMode === 'tpv') ? 'fpv' : 'tpv';
+        this.mesh.visible = (this.cameraMode === 'tpv');
+        if (window.gameSettings) window.gameSettings.save({ cameraMode: this.cameraMode });
+        if (window.sounds) window.sounds.playClick();
+    }
+
+    pressJump() {
+        if (this.isGrounded) {
+            this.velocity.y = this.jumpForce;
+            this.isGrounded = false;
+            if (window.sounds) window.sounds.playJump();
+        }
+    }
+
+    lookAround(dTheta, dPhi) {
+        this.cameraAngle.theta -= dTheta;
+        this.cameraAngle.phi = Math.max(0.05, Math.min(Math.PI / 2.3, this.cameraAngle.phi + dPhi));
+    }
+
+    zoomBy(amount) {
+        this.cameraAngle.distance = Math.max(2.5, Math.min(10.0, this.cameraAngle.distance + amount));
+    }
+
     update(delta, camera) {
         const dt = Math.min(delta, 0.1);
+
+        if (this.touchLook.theta || this.touchLook.phi) this.lookAround(this.touchLook.theta * dt, this.touchLook.phi * dt);
+        if (this.zoomInput) this.zoomBy(this.zoomInput * dt);
 
         const moveDir = this.moveDirVec.set(0, 0, 0);
         if (this.keys.forward) moveDir.z -= 1;

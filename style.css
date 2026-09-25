@@ -217,8 +217,8 @@ body {
 /* Radar Minimap - GTA Style Bottom-Left */
 .radar-wrapper {
     position: absolute;
-    bottom: 24px;
-    left: 24px;
+    top: 16px;
+    left: 16px;
     background: rgba(8, 12, 20, 0.9);
     border: 2px solid rgba(0, 240, 255, 0.4);
     border-radius: 8px;
@@ -282,8 +282,12 @@ body {
 /* Controls Pill - Bottom-Right */
 .controls-pill {
     position: absolute;
-    bottom: 24px;
-    right: 24px;
+    top: 16px;
+    right: 16px;
+    left: 210px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    row-gap: 6px;
     background: rgba(8, 12, 20, 0.9);
     border: 1px solid rgba(0, 240, 255, 0.3);
     border-radius: 6px;
@@ -1409,7 +1413,7 @@ body {
     .btn-label { display: none; }
 
     .controls-pill { display: none; }
-    .radar-wrapper { transform: scale(0.7); transform-origin: bottom left; }
+    .radar-wrapper { transform: scale(0.72); transform-origin: top left; }
 
     .dashboard-viewport { top: 56px; height: calc(100vh - 56px); padding: 16px 12px; }
     .dash-title { font-size: 19px; }
@@ -1437,6 +1441,151 @@ body {
     .cert-modal-header h3 { font-size: 15px; }
     .certificate-paper { padding: 12px; }
     .cert-meta-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* ==========================================================================
+   ON-SCREEN CONTROL PAD — tap/drag driving for touch and mouse players
+   ========================================================================== */
+.touch-controls {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 55;
+    font-family: var(--font-mono);
+    opacity: 0.92;
+}
+
+.touch-controls button {
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    background: rgba(8, 12, 20, 0.8);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 8px;
+    color: var(--cyan);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: 17px;
+    line-height: 1;
+    padding: 0;
+    transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.touch-controls button:hover {
+    border-color: rgba(0, 240, 255, 0.7);
+}
+
+.touch-controls button.pressed,
+.touch-controls button:active {
+    background: rgba(0, 240, 255, 0.22);
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.45);
+}
+
+.tc-dpad,
+.tc-lookpad {
+    position: absolute;
+    bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 5px;
+}
+
+.tc-dpad { left: 18px; }
+.tc-lookpad { right: 18px; }
+
+.tc-dpad .up, .tc-lookpad .up { grid-column: 2; grid-row: 1; }
+.tc-dpad .left, .tc-lookpad .left { grid-column: 1; grid-row: 2; }
+.tc-dpad .right, .tc-lookpad .right { grid-column: 3; grid-row: 2; }
+.tc-dpad .down, .tc-lookpad .down { grid-column: 2; grid-row: 3; }
+
+.tc-lookpad .tc-center {
+    grid-column: 2;
+    grid-row: 2;
+    pointer-events: none;
+    background: transparent;
+    border-color: rgba(0, 240, 255, 0.16);
+    color: rgba(0, 240, 255, 0.45);
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: default;
+}
+
+.tc-zoom {
+    position: absolute;
+    right: 188px;
+    bottom: 55px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tc-zoom button {
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+}
+
+.tc-actions {
+    position: absolute;
+    right: 18px;
+    bottom: 188px;
+    display: grid;
+    grid-template-columns: repeat(2, 66px);
+    grid-template-rows: repeat(2, 42px);
+    gap: 6px;
+}
+
+.tc-actions .act {
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.tc-actions .act[data-action="hack"] {
+    color: var(--green);
+    border-color: rgba(0, 255, 102, 0.4);
+}
+
+.tc-actions .act[data-action="hack"].pressed {
+    background: rgba(0, 255, 102, 0.2);
+    box-shadow: 0 0 16px rgba(0, 255, 102, 0.45);
+}
+
+.tc-actions .act.pressed {
+    background: rgba(255, 0, 127, 0.24);
+    border-color: var(--pink);
+    box-shadow: 0 0 16px rgba(255, 0, 127, 0.45);
+}
+
+@media (max-width: 768px) {
+    .tc-dpad,
+    .tc-lookpad {
+        grid-template-columns: repeat(3, 44px);
+        grid-template-rows: repeat(3, 44px);
+        bottom: 12px;
+    }
+    .tc-dpad { left: 12px; }
+    .tc-lookpad { right: 12px; }
+    .tc-actions {
+        right: 12px;
+        bottom: 162px;
+        grid-template-columns: repeat(2, 58px);
+        grid-template-rows: repeat(2, 38px);
+    }
+    .tc-zoom {
+        right: 160px;
+        bottom: 44px;
+    }
+    .tc-zoom button {
+        width: 34px;
+        height: 34px;
+    }
 }
 
 @media print {

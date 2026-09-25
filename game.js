@@ -55,6 +55,9 @@ class CyberCTFGame {
         // 5. UI Bindings
         this.setupUI();
 
+        // 5b. On-screen arrow pad (touch + mouse)
+        this.setupTouchControls();
+
         // 6. Window Resize Handler
         window.addEventListener('resize', () => this.onWindowResize());
 
@@ -164,6 +167,106 @@ class CyberCTFGame {
         if (window.gameSettings) window.gameSettings.save({ dayMode: isDay });
         if (window.sounds) window.sounds.playInteract();
         this.showBannerNotification(isDay ? '🌅 DAY CYCLE: Metropolis sunrise — sunlight restored.' : '🌃 NIGHT CYCLE: Neon grid reactivated.', 'info');
+    }
+
+    interactWithTerminal() {
+        if (!this.nearbyTerminal) return;
+        const modal = document.getElementById('terminal-modal');
+        if (modal.classList.contains('hidden')) {
+            window.terminalUI.openTerminal(this.nearbyTerminal.id);
+        } else {
+            window.terminalUI.closeTerminal();
+        }
+    }
+
+    // On-screen arrow pad — drives the same state as the keyboard and mouse drag
+    setupTouchControls() {
+        const pad = document.getElementById('touch-controls');
+        if (!pad) return;
+
+        const LOOK_SPEED = 1.9, TILT_SPEED = 1.1, ZOOM_SPEED = 4.5;
+        const held = new Set();
+        const heldButtons = new Set();
+        const releaseFns = new Map();
+        const weights = {
+            'theta+': ['theta', 1], 'theta-': ['theta', -1],
+            'phi+': ['phi', 1], 'phi-': ['phi', -1],
+            'zoomout': ['zoom', 1], 'zoomin': ['zoom', -1]
+        };
+
+        const syncAxisButtons = () => {
+            const totals = { theta: 0, phi: 0, zoom: 0 };
+            held.forEach(spec => {
+                const w = weights[spec];
+                totals[w[0]] += w[1];
+            });
+            const p = this.player;
+            if (!p) return;
+            p.touchLook.theta = totals.theta * LOOK_SPEED;
+            p.touchLook.phi = totals.phi * TILT_SPEED;
+            p.zoomInput = totals.zoom * ZOOM_SPEED;
+        };
+
+        pad.querySelectorAll('button[data-key], button[data-look], button[data-action]').forEach(btn => {
+            const key = btn.dataset.key;
+            const look = btn.dataset.look;
+            const action = btn.dataset.action;
+            const isAxis = !!look || action === 'zoomin' || action === 'zoomout';
+            const spec = look || action;
+
+            const press = (e) => {
+                e.preventDefault();
+                const p = this.player;
+                if (!p) return;
+                if (window.sounds) window.sounds.init();
+
+                if (key) {
+                    btn.classList.add('pressed');
+                    heldButtons.add(btn);
+                    p.setMoveKey(key, true);
+                } else if (isAxis) {
+                    btn.classList.add('pressed');
+                    heldButtons.add(btn);
+                    held.add(spec);
+                    syncAxisButtons();
+                } else if (action === 'jump') {
+                    p.pressJump();
+                } else if (action === 'hack') {
+                    this.interactWithTerminal();
+                } else if (action === 'camera') {
+                    p.toggleCameraMode();
+                } else if (action === 'sprint') {
+                    p.setMoveKey('sprint', !p.keys.sprint);
+                    btn.classList.toggle('pressed', p.keys.sprint);
+                }
+            };
+
+            const release = () => {
+                heldButtons.delete(btn);
+                if (key) {
+                    btn.classList.remove('pressed');
+                    if (this.player) this.player.setMoveKey(key, false);
+                } else if (isAxis) {
+                    btn.classList.remove('pressed');
+                    held.delete(spec);
+                    syncAxisButtons();
+                }
+            };
+
+            btn.addEventListener('pointerdown', press);
+            btn.addEventListener('pointerup', release);
+            btn.addEventListener('pointerleave', release);
+            btn.addEventListener('pointercancel', release);
+            releaseFns.set(btn, release);
+        });
+
+        // Safety net: a pointer released over a modal or off the pad must never leave a key stuck down
+        window.addEventListener('pointerup', () => {
+            Array.from(heldButtons).forEach(b => {
+                const fn = releaseFns.get(b);
+                if (fn) fn();
+            });
+        });
     }
 
     showBannerNotification(message, type = 'info') {
@@ -331,14 +434,7 @@ class CyberCTFGame {
             if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
             if (e.code === 'KeyE') {
-                if (this.nearbyTerminal) {
-                    const modal = document.getElementById('terminal-modal');
-                    if (modal.classList.contains('hidden')) {
-                        window.terminalUI.openTerminal(this.nearbyTerminal.id);
-                    } else {
-                        window.terminalUI.closeTerminal();
-                    }
-                }
+                this.interactWithTerminal();
             } else if (e.code === 'Escape') {
                 window.terminalUI.closeTerminal();
                 if (modalHelp) modalHelp.classList.add('hidden');
