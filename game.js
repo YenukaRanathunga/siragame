@@ -147,16 +147,20 @@ class CyberCTFGame {
 
     applyDayNight(isDay) {
         if (!this.world) return;
-        this.world.setDayNight(isDay);
-        if (this.bloomPass) this.bloomPass.strength = isDay ? 0.22 : 0.8;
-        if (this.renderer) this.renderer.toneMappingExposure = isDay ? 1.15 : 1.05;
+        this.world.setDayNight(isDay, true);
+        this.syncDayNightGrade();
+    }
+
+    // Bloom and exposure track the sun so the transition never pops
+    syncDayNightGrade() {
+        const t = this.world ? this.world.dayT : 0;
+        if (this.bloomPass) this.bloomPass.strength = 0.8 - 0.58 * t;
+        if (this.renderer) this.renderer.toneMappingExposure = 1.05 + 0.1 * t;
     }
 
     toggleDayNight() {
         if (!this.world) return;
         const isDay = this.world.toggleDayNight();
-        if (this.bloomPass) this.bloomPass.strength = isDay ? 0.22 : 0.8;
-        if (this.renderer) this.renderer.toneMappingExposure = isDay ? 1.15 : 1.05;
         if (window.gameSettings) window.gameSettings.save({ dayMode: isDay });
         if (window.sounds) window.sounds.playInteract();
         this.showBannerNotification(isDay ? '🌅 DAY CYCLE: Metropolis sunrise — sunlight restored.' : '🌃 NIGHT CYCLE: Neon grid reactivated.', 'info');
@@ -599,6 +603,7 @@ class CyberCTFGame {
         if (this.currentViewMode === '3d') {
             this.player.update(delta, this.camera);
             this.world.update(delta, this.player.position, window.challengeManager.score);
+            this.syncDayNightGrade();
             this.checkTerminalProximity();
             this.renderRadarMinimap();
             if (this.composer) {

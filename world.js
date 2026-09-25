@@ -23,6 +23,12 @@ class CyberBunkerWorld {
         this.rainSystem = null;
         this.elapsed = 0;
         this.isDay = false;
+        this.dayT = 0;
+        this.dayTarget = 0;
+        this.cars = [];
+        this.pedestrians = [];
+        this.adMaterials = [];
+        this.dayLightTransition = 5.0;
 
         // Build rich procedural texture palette for vibrant Cyberpunk Night aesthetic
         this.textures = this.initProceduralTextures();
@@ -39,6 +45,8 @@ class CyberBunkerWorld {
         this.buildCentralParkDistrict();
         this.buildStreetPropsAndLighting();
         this.buildMetropolisVehicles();
+        this.buildTrafficSystem();
+        this.buildPedestrianCrowd();
         this.buildChallengeStations();
         this.buildPoliceHelicopter();
         this.buildRainSystem();
@@ -887,6 +895,13 @@ class CyberBunkerWorld {
         this.skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: this.skyTex, side: THREE.BackSide, fog: false }));
         this.scene.add(this.skyMesh);
 
+        // Daytime sky layered just inside the night dome so the two can cross-fade
+        this.daySkyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({
+            map: this.skyTexDay, side: THREE.BackSide, fog: false, transparent: true, opacity: 0, depthWrite: false
+        }));
+        this.daySkyMesh.scale.setScalar(0.985);
+        this.scene.add(this.daySkyMesh);
+
         // Moody 3D Night Clouds (unlit silhouettes that blend into the night sky)
         const cloudMat = new THREE.MeshBasicMaterial({ color: 0x1a2440 });
         this.cloudMat = cloudMat;
@@ -951,52 +966,81 @@ class CyberBunkerWorld {
         return new THREE.CanvasTexture(c);
     }
 
-    // Day/Night cycle: swap sky, relight scene, dim window emissives & streetlights
-    setDayNight(isDay) {
-        this.isDay = isDay;
+    // Time-of-day lighting palette (night → day, with a warm dawn/dusk band)
+    initDayLightPalette() {
+        const c = (hex) => new THREE.Color(hex);
+        this._dc = {
+            sunNight: c(0x93c5fd), sunDay: c(0xfff4d6), sunWarm: c(0xff9d5c),
+            hemiSkyNight: c(0x1e293b), hemiSkyDay: c(0x93c5fd), hemiSkyWarm: c(0xf2a573),
+            hemiGroundNight: c(0x090d16), hemiGroundDay: c(0x64748b),
+            fogNight: c(0x060913), fogDay: c(0xaec6e4), fogWarm: c(0xd98a5a),
+            cloudNight: c(0x1a2440), cloudDay: c(0xf5f7fa), cloudWarm: c(0xffb27d)
+        };
+    }
 
-        this.skyMesh.material.map = isDay ? this.skyTexDay : this.skyTexNight;
-        this.skyMesh.material.needsUpdate = true;
+    // Continuous relight of the whole city: t = 0 neon night, t = 1 full daylight
+    applyDayLight(t) {
+        this.dayT = t;
+        if (!this._dc) this.initDayLightPalette();
+        const C = this._dc;
+        const lerp = THREE.MathUtils.lerp;
+        const golden = Math.max(0, 1 - Math.abs(t - 0.35) / 0.3);
+        const lamps = this.isBlackout ? 0 : 1;
+
+        if (this.daySkyMesh) this.daySkyMesh.material.opacity = t;
 
         if (this.cloudMat) {
-            this.cloudMat.color.setHex(isDay ? 0xf5f7fa : 0x1a2440);
+            this.cloudMat.color.copy(C.cloudNight).lerp(C.cloudDay, t).lerp(C.cloudWarm, golden * 0.55);
         }
 
         if (this.sunLight) {
-            this.sunLight.color.setHex(isDay ? 0xfff4d6 : 0x93c5fd);
-            this.sunLight.intensity = isDay ? 1.7 : 0.85;
+            this.sunLight.color.copy(C.sunNight).lerp(C.sunDay, t).lerp(C.sunWarm, golden * 0.8);
+            this.sunLight.intensity = this.isBlackout ? 0.15 : lerp(0.85, 1.7, t);
         }
         if (this.hemiLight) {
-            this.hemiLight.color.setHex(isDay ? 0x93c5fd : 0x1e293b);
-            this.hemiLight.groundColor.setHex(isDay ? 0x64748b : 0x090d16);
-            this.hemiLight.intensity = isDay ? 0.85 : 0.55;
+            this.hemiLight.color.copy(C.hemiSkyNight).lerp(C.hemiSkyDay, t).lerp(C.hemiSkyWarm, golden * 0.7);
+            this.hemiLight.groundColor.copy(C.hemiGroundNight).lerp(C.hemiGroundDay, t);
+            this.hemiLight.intensity = this.isBlackout ? 0.12 : lerp(0.55, 0.85, t);
         }
         if (this.fillLight) {
-            this.fillLight.intensity = isDay ? 0.15 : 0.35;
+            this.fillLight.intensity = this.isBlackout ? 0.05 : lerp(0.35, 0.15, t);
         }
 
         if (this.scene.fog) {
-            this.scene.fog.color.setHex(isDay ? 0xaec6e4 : 0x060913);
-            this.scene.fog.near = isDay ? 500 : 300;
-            this.scene.fog.far = isDay ? 2800 : 2400;
+            this.scene.fog.color.copy(C.fogNight).lerp(C.fogDay, t).lerp(C.fogWarm, golden * 0.5);
+            this.scene.fog.near = lerp(300, 500, t);
+            this.scene.fog.far = lerp(2400, 2800, t);
         }
 
-        // Window emissives: off in daylight, glowing at night
+        // Window emissives, street lamps and billboards fade with the sun
         if (this.facadeMats) {
-            this.facadeMats.forEach(fm => {
-                fm.mat.emissiveIntensity = isDay ? 0.04 : fm.night;
-            });
+            this.facadeMats.forEach(fm => { fm.mat.emissiveIntensity = lerp(fm.night, 0.04, t); });
         }
         if (this.streetLightMaterials) {
-            this.streetLightMaterials.forEach(m => {
-                m.emissiveIntensity = isDay ? 0.05 : 2.2;
-            });
+            this.streetLightMaterials.forEach(m => { m.emissiveIntensity = lerp(2.2, 0.05, t) * lamps; });
         }
         if (this.streetPointLights) {
-            this.streetPointLights.forEach(l => {
-                l.intensity = isDay ? 0 : 1.2;
-            });
+            this.streetPointLights.forEach(l => { l.intensity = lerp(1.2, 0, t) * lamps; });
         }
+        if (this.adMaterials) {
+            const adGlow = lerp(0.9, 0.06, t) * lamps;
+            this.adMaterials.forEach(m => { m.emissiveIntensity = adGlow; });
+        }
+        if (this.headlightMat) {
+            this.headlightMat.emissiveIntensity = lerp(2.4, 0.35, t);
+        }
+        if (this.tailLightMat) {
+            this.tailLightMat.emissiveIntensity = lerp(2.0, 0.4, t);
+        }
+        if (this.pedNeonMat) {
+            this.pedNeonMat.emissiveIntensity = lerp(1.5, 0.1, t);
+        }
+    }
+
+    setDayNight(isDay, instant = false) {
+        this.isDay = isDay;
+        this.dayTarget = isDay ? 1 : 0;
+        if (instant) this.applyDayLight(this.dayTarget);
     }
 
     toggleDayNight() {
@@ -1421,6 +1465,10 @@ class CyberBunkerWorld {
         const matTerra = new THREE.MeshStandardMaterial({ map: this.textures.terracottaBrick, roughness: 0.75 });
         const matRetail = new THREE.MeshStandardMaterial({ map: this.textures.colorfulRetailPodium, roughness: 0.5 });
         const matBillboard = new THREE.MeshStandardMaterial({ map: this.textures.billboardAds, roughness: 0.4 });
+        matBillboard.emissive = new THREE.Color(0xffffff);
+        matBillboard.emissiveMap = this.textures.billboardAds;
+        matBillboard.emissiveIntensity = 0.9;
+        this.adMaterials.push(matBillboard);
         const matHelipad = new THREE.MeshStandardMaterial({ map: this.textures.helipadRoof, roughness: 0.8 });
         const matRoof = new THREE.MeshStandardMaterial({ map: this.textures.roofGravel, roughness: 0.9 });
 
@@ -2009,7 +2057,8 @@ class CyberBunkerWorld {
             color: 0x9fd8ff, metalness: 0.9, roughness: 0.08,
             transparent: true, opacity: 0.32
         });
-        const busAdMat = new THREE.MeshStandardMaterial({ map: this.textures.billboardAds, emissive: 0xffffff, emissiveMap: this.textures.billboardAds, emissiveIntensity: 0.55 });
+        const busAdMat = new THREE.MeshStandardMaterial({ map: this.textures.billboardAds, emissive: 0xffffff, emissiveMap: this.textures.billboardAds, emissiveIntensity: 0.9 });
+        this.adMaterials.push(busAdMat);
 
         [-20.5, 20.5].forEach(sx => {
             [-200, -80, 80, 200].forEach(sz => {
@@ -2053,28 +2102,29 @@ class CyberBunkerWorld {
 
     buildMetropolisVehicles() {
         // High-density colorful traffic (Taxis, Red Coupes, Blue Sedans, White SUVs, Police Cruisers)
+        // Parked at the curb so the driving lanes stay clear for the moving traffic system
         const carLocations = [
-            // Boulevard Southbound Traffic (X = -7)
-            { type: 'taxi', x: -7, z: -160, rot: Math.PI },
-            { type: 'sedan', color: 0xdc2626, x: -7, z: -100, rot: Math.PI }, // Candy Red
-            { type: 'sedan', color: 0x2563eb, x: -7, z: -30, rot: Math.PI },  // Royal Blue
-            { type: 'taxi', x: -7, z: 35, rot: Math.PI },
-            { type: 'sedan', color: 0xffffff, x: -7, z: 90, rot: Math.PI },  // White SUV
-            { type: 'police', x: -7, z: 170, rot: Math.PI },
+            // Boulevard west curb (X = -11)
+            { type: 'taxi', x: -11, z: -160, rot: Math.PI },
+            { type: 'sedan', color: 0xdc2626, x: -11, z: -100, rot: Math.PI }, // Candy Red
+            { type: 'sedan', color: 0x2563eb, x: -11, z: -30, rot: Math.PI },  // Royal Blue
+            { type: 'taxi', x: -11, z: 35, rot: Math.PI },
+            { type: 'sedan', color: 0xffffff, x: -11, z: 90, rot: Math.PI },  // White SUV
+            { type: 'police', x: -11, z: 170, rot: Math.PI },
 
-            // Boulevard Northbound Traffic (X = 7)
-            { type: 'taxi', x: 7, z: 150, rot: 0 },
-            { type: 'sedan', color: 0xf59e0b, x: 7, z: 80, rot: 0 },   // Amber Orange
-            { type: 'sedan', color: 0x16a34a, x: 7, z: 10, rot: 0 },   // Emerald Green
-            { type: 'taxi', x: 7, z: -60, rot: 0 },
-            { type: 'sedan', color: 0x0284c7, x: 7, z: -130, rot: 0 }, // Sky Blue
-            { type: 'sedan', color: 0xffffff, x: 7, z: -200, rot: 0 },
+            // Boulevard east curb (X = 11)
+            { type: 'taxi', x: 11, z: 150, rot: 0 },
+            { type: 'sedan', color: 0xf59e0b, x: 11, z: 80, rot: 0 },   // Amber Orange
+            { type: 'sedan', color: 0x16a34a, x: 11, z: 10, rot: 0 },   // Emerald Green
+            { type: 'taxi', x: 11, z: -45, rot: 0 },
+            { type: 'sedan', color: 0x0284c7, x: 11, z: -130, rot: 0 }, // Sky Blue
+            { type: 'sedan', color: 0xffffff, x: 11, z: -200, rot: 0 },
 
             // Coastal Highway (X = 206, 194)
-            { type: 'taxi', x: 206, z: -180, rot: 0 },
-            { type: 'sedan', color: 0xdc2626, x: 194, z: -120, rot: Math.PI },
-            { type: 'police', x: 195, z: 50, rot: Math.PI },
-            { type: 'taxi', x: 206, z: 40, rot: 0 },
+            { type: 'taxi', x: 211, z: -180, rot: 0 },
+            { type: 'sedan', color: 0xdc2626, x: 190, z: -120, rot: Math.PI },
+            { type: 'police', x: 190, z: 50, rot: Math.PI },
+            { type: 'taxi', x: 211, z: 40, rot: 0 },
             { type: 'sedan', color: 0x2563eb, x: 228, z: -225, rot: Math.PI / 2 }
         ];
 
@@ -2089,6 +2139,221 @@ class CyberBunkerWorld {
             this.scene.add(mesh);
             this.addBoxCollider(c.x, c.z, 2.4, 5.0); // Solid car collider
         });
+    }
+
+    // Moving traffic: shared geometry + materials, lane following, player-aware braking
+    buildTrafficSystem() {
+        const bodyGeo = new THREE.BoxGeometry(2.3, 0.85, 4.8);
+        const cabinGeo = new THREE.BoxGeometry(1.85, 0.85, 2.4);
+        const lampGeo = new THREE.BoxGeometry(1.9, 0.16, 0.12);
+        const beamGeo = new THREE.ConeGeometry(1.4, 9, 10, 1, true);
+
+        this.headlightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2cc, emissiveIntensity: 2.4 });
+        this.tailLightMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2.0 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.9 });
+        const beamMat = new THREE.MeshBasicMaterial({
+            color: 0xffe9b3, transparent: true, opacity: 0.07,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+        });
+        const paintPalette = [0xdc2626, 0x2563eb, 0xf8fafc, 0x16a34a, 0xf59e0b, 0x0284c7, 0x94a3b8, 0xfbc02d]
+            .map(hex => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.28, metalness: 0.65 }));
+
+        // axis 'z' = north-south lane (fixed = x), axis 'x' = east-west lane (fixed = z)
+        const lanes = [
+            { axis: 'z', fixed: -7, dir: -1, speed: 16 },
+            { axis: 'z', fixed: 7, dir: 1, speed: 16 },
+            { axis: 'z', fixed: 196.5, dir: 1, speed: 21 },
+            { axis: 'z', fixed: 204.5, dir: -1, speed: 21 },
+            { axis: 'z', fixed: -133.5, dir: -1, speed: 12 },
+            { axis: 'z', fixed: -126.5, dir: 1, speed: 12 },
+            { axis: 'z', fixed: 126.5, dir: -1, speed: 12 },
+            { axis: 'z', fixed: 133.5, dir: 1, speed: 12 },
+            { axis: 'z', fixed: -263.5, dir: -1, speed: 11 },
+            { axis: 'z', fixed: -256.5, dir: 1, speed: 11 },
+            { axis: 'x', fixed: -63.5, dir: 1, speed: 9 },
+            { axis: 'x', fixed: -56.5, dir: -1, speed: 9 },
+            { axis: 'x', fixed: 66.5, dir: -1, speed: 9 },
+            { axis: 'x', fixed: 73.5, dir: 1, speed: 9 }
+        ];
+
+        let paintIndex = 0;
+        lanes.forEach(lane => {
+            const isZ = lane.axis === 'z';
+            const min = isZ ? -575 : -405;
+            const max = isZ ? 575 : 245;
+            const span = max - min;
+
+            for (let k = 0; k < 2; k++) {
+                const car = new THREE.Group();
+                const body = new THREE.Mesh(bodyGeo, paintPalette[paintIndex++ % paintPalette.length]);
+                body.position.y = 0.65;
+                body.castShadow = true;
+                car.add(body);
+
+                const cabin = new THREE.Mesh(cabinGeo, glassMat);
+                cabin.position.set(0, 1.45, -0.2);
+                car.add(cabin);
+
+                const headBar = new THREE.Mesh(lampGeo, this.headlightMat);
+                headBar.position.set(0, 0.74, 2.42);
+                car.add(headBar);
+
+                const tailBar = new THREE.Mesh(lampGeo, this.tailLightMat);
+                tailBar.position.set(0, 0.74, -2.42);
+                car.add(tailBar);
+
+                const beam = new THREE.Mesh(beamGeo, beamMat);
+                beam.rotation.x = -Math.PI / 2;
+                beam.position.set(0, 0.5, 7.9);
+                car.add(beam);
+
+                const along = min + ((k + 0.15 + Math.random() * 0.6) / 2) * span;
+                if (isZ) {
+                    car.position.set(lane.fixed, 0, along);
+                    car.rotation.y = lane.dir > 0 ? 0 : Math.PI;
+                } else {
+                    car.position.set(along, 0, lane.fixed);
+                    car.rotation.y = lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+                }
+                this.scene.add(car);
+
+                this.cars.push({
+                    mesh: car, beam, axis: lane.axis, dir: lane.dir,
+                    speed: lane.speed, cruise: lane.speed, min, max,
+                    priority: isZ
+                });
+            }
+        });
+    }
+
+    updateTraffic(delta, playerPos) {
+        const beamsOn = this.dayT < 0.55;
+        for (let i = 0; i < this.cars.length; i++) {
+            const c = this.cars[i];
+            const m = c.mesh;
+            const isZ = c.axis === 'z';
+            const along = isZ ? m.position.z : m.position.x;
+
+            // Brake for anything standing in the lane ahead of the car
+            let cruise = c.cruise;
+            if (playerPos) {
+                const ahead = c.dir * (isZ ? playerPos.z - m.position.z : playerPos.x - m.position.x);
+                const lateral = Math.abs((isZ ? playerPos.x - m.position.x : playerPos.z - m.position.z));
+                if (ahead > 0 && ahead < 10 && lateral < 3.0) cruise = 0;
+            }
+
+            // Side streets yield to the avenues so intersections never gridlock
+            if (cruise > 0 && !c.priority) {
+                const fx = isZ ? 0 : c.dir, fz = isZ ? c.dir : 0;
+                const lx = isZ ? 1 : 0, lz = isZ ? 0 : 1;
+                for (let j = 0; j < this.cars.length; j++) {
+                    const o = this.cars[j];
+                    if (o === c || !o.priority) continue;
+                    const dx = o.mesh.position.x - m.position.x;
+                    const dz = o.mesh.position.z - m.position.z;
+                    const gap = dx * fx + dz * fz;
+                    if (gap > 0 && gap < 16 && Math.abs(dx * lx + dz * lz) < 4.5) { cruise = 0; break; }
+                }
+            }
+            c.speed += (cruise - c.speed) * Math.min(1, delta * 3.2);
+
+            let next = along + c.dir * c.speed * delta;
+            if (next > c.max) next = c.min + (next - c.max);
+            else if (next < c.min) next = c.max - (c.min - next);
+            if (isZ) m.position.z = next; else m.position.x = next;
+
+            if (playerPos) {
+                const dx = playerPos.x - m.position.x;
+                const dz = playerPos.z - m.position.z;
+                const far = dx * dx + dz * dz > 67600;
+                m.visible = !far;
+                c.beam.visible = !far && beamsOn;
+            }
+        }
+    }
+
+    // Citizens walking the sidewalks — the city reads as inhabited once they move
+    buildPedestrianCrowd() {
+        const torsoGeo = new THREE.BoxGeometry(0.52, 0.78, 0.32);
+        const legGeo = new THREE.BoxGeometry(0.44, 0.78, 0.28);
+        const headGeo = new THREE.SphereGeometry(0.19, 8, 6);
+
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xc98d5f, roughness: 0.85 });
+        const trouserMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.9 });
+        this.pedNeonMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6, emissive: 0x22d3ee, emissiveIntensity: 1.5 });
+        const coatMats = [0x334155, 0x0ea5e9, 0xdb2777, 0xfacc15, 0x22c55e, 0xe2e8f0, 0x7c3aed, 0xf97316]
+            .map(hex => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.7 }));
+
+        // axis 'z' sidewalks (fixed = x) hug the boulevard and N-S avenues, 'x' the cross streets
+        const walks = [
+            { axis: 'z', fixed: -15, min: -240, max: 240 },
+            { axis: 'z', fixed: 16, min: -240, max: 240 },
+            { axis: 'z', fixed: -130, min: -180, max: 180 },
+            { axis: 'z', fixed: 132, min: -180, max: 180 },
+            { axis: 'z', fixed: -262, min: -140, max: 140 },
+            { axis: 'x', fixed: -66, min: -110, max: 110 },
+            { axis: 'x', fixed: 76, min: -110, max: 110 },
+            { axis: 'x', fixed: -196, min: -90, max: 90 }
+        ];
+
+        for (let i = 0; i < 24; i++) {
+            const w = walks[i % walks.length];
+            const isZ = w.axis === 'z';
+            const g = new THREE.Group();
+
+            const legs = new THREE.Mesh(legGeo, trouserMat);
+            legs.position.y = 0.39;
+            g.add(legs);
+
+            const torso = new THREE.Mesh(torsoGeo, (i % 6 === 2) ? this.pedNeonMat : coatMats[i % coatMats.length]);
+            torso.position.y = 1.16;
+            torso.castShadow = true;
+            g.add(torso);
+
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.position.y = 1.72;
+            g.add(head);
+
+            const jitter = (Math.random() - 0.5) * 2.4;
+            const dir = Math.random() > 0.5 ? 1 : -1;
+            const along = w.min + Math.random() * (w.max - w.min);
+            if (isZ) g.position.set(w.fixed + jitter, 0.25, along);
+            else g.position.set(along, 0.25, w.fixed + jitter);
+            this.scene.add(g);
+
+            this.pedestrians.push({
+                mesh: g, legs, axis: w.axis, dir,
+                speed: 1.0 + Math.random() * 1.1,
+                phase: Math.random() * 6.28,
+                min: w.min + Math.random() * 30,
+                max: w.max - Math.random() * 30
+            });
+        }
+    }
+
+    updatePedestrians(delta, playerPos) {
+        for (let i = 0; i < this.pedestrians.length; i++) {
+            const p = this.pedestrians[i];
+            const m = p.mesh;
+            const isZ = p.axis === 'z';
+            let along = isZ ? m.position.z : m.position.x;
+
+            along += p.dir * p.speed * delta;
+            if (along > p.max) { along = p.max; p.dir = -1; }
+            else if (along < p.min) { along = p.min; p.dir = 1; }
+            if (isZ) m.position.z = along; else m.position.x = along;
+
+            m.rotation.y = isZ ? (p.dir > 0 ? 0 : Math.PI) : (p.dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+            const stride = Math.sin(this.elapsed * 5.5 + p.phase);
+            m.position.y = 0.25 + Math.abs(stride) * 0.045;
+            p.legs.rotation.x = stride * 0.45;
+
+            if (playerPos) {
+                const dx = playerPos.x - m.position.x;
+                const dz = playerPos.z - m.position.z;
+                m.visible = dx * dx + dz * dz < 16900;
+            }
+        }
     }
 
     createVehicleMesh(color = 0xffffff, isTaxi = false) {
@@ -2482,19 +2747,13 @@ class CyberBunkerWorld {
     triggerCityBlackout(isBlackout = true) {
         this.isBlackout = isBlackout;
 
-        // 1. Extinguish or illuminate streetlights
+        // 1. Extinguish or illuminate streetlights (intensities handled by the time-of-day pass)
         this.streetLightMaterials.forEach(mat => {
-            mat.emissiveIntensity = isBlackout ? 0.0 : 2.2;
             mat.color.setHex(isBlackout ? 0x222222 : 0xffd166);
-        });
-        this.streetPointLights.forEach(p => {
-            p.intensity = isBlackout ? 0.0 : 1.2;
         });
 
         // 2. Dim Sky & Lighting to pitch-black emergency level
-        if (this.sunLight) this.sunLight.intensity = isBlackout ? 0.15 : 0.85;
-        if (this.hemiLight) this.hemiLight.intensity = isBlackout ? 0.12 : 0.55;
-        if (this.fillLight) this.fillLight.intensity = isBlackout ? 0.05 : 0.35;
+        this.applyDayLight(this.dayT);
 
         // 3. Audio & Banner Trigger
         if (isBlackout && window.sounds) {
@@ -2617,6 +2876,15 @@ class CyberBunkerWorld {
 
     update(delta, playerPos, totalScore) {
         const time = performance.now() * 0.001;
+        this.elapsed += delta;
+
+        // 0. Ease the sun in and out instead of cutting between day and night
+        if (this.dayT !== this.dayTarget) {
+            const step = delta / this.dayLightTransition;
+            const t = this.dayT < this.dayTarget ? Math.min(this.dayTarget, this.dayT + step)
+                                                 : Math.max(this.dayTarget, this.dayT - step);
+            this.applyDayLight(t);
+        }
 
         // 1. Drift clouds across the night sky
         this.clouds.forEach(cl => {
@@ -2642,12 +2910,15 @@ class CyberBunkerWorld {
 
         // 1c. Blink rooftop aviation beacons
         if (this.beacons.length) {
-            this.elapsed += delta;
             for (let i = 0; i < this.beacons.length; i++) {
                 const b = this.beacons[i];
                 b.mesh.visible = Math.sin(this.elapsed * b.speed + b.phase) > -0.2;
             }
         }
+
+        // 1d. Traffic and pedestrians
+        this.updateTraffic(delta, playerPos);
+        this.updatePedestrians(delta, playerPos);
 
         // 2. Animate Police Cruisers & Sirens during Wanted Alert
         if (this.policeAlertLevel >= 3) {
