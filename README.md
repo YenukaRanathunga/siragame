@@ -35,6 +35,7 @@ python -m http.server 8080
 | **Mouse Drag** | 360° Camera orbit / Scroll to zoom |
 | **Key E** | Access / Hack terminal when close to a station |
 | **Key V** | Toggle between **3rd-Person** and **1st-Person** camera views |
+| **Key N** | Toggle the **Day / Night** lighting cycle |
 | **Escape** | Close open terminal window |
 
 ---

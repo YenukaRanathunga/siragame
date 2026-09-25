@@ -47,6 +47,11 @@ class CyberCTFGame {
         // 4. Post-Processing: Neon Bloom + PBR Environment Reflections
         this.initPostProcessing();
 
+        // 4b. Restore saved day/night preference
+        if (window.gameSettings && window.gameSettings.load().dayMode) {
+            this.applyDayNight(true);
+        }
+
         // 5. UI Bindings
         this.setupUI();
 
@@ -73,6 +78,7 @@ class CyberCTFGame {
                 0.6
             );
             this.composer.addPass(bloomPass);
+            this.bloomPass = bloomPass;
 
             this.buildNightEnvironment();
         } catch (err) {
@@ -139,6 +145,23 @@ class CyberCTFGame {
         if (pmrem.dispose) pmrem.dispose();
     }
 
+    applyDayNight(isDay) {
+        if (!this.world) return;
+        this.world.setDayNight(isDay);
+        if (this.bloomPass) this.bloomPass.strength = isDay ? 0.22 : 0.8;
+        if (this.renderer) this.renderer.toneMappingExposure = isDay ? 1.15 : 1.05;
+    }
+
+    toggleDayNight() {
+        if (!this.world) return;
+        const isDay = this.world.toggleDayNight();
+        if (this.bloomPass) this.bloomPass.strength = isDay ? 0.22 : 0.8;
+        if (this.renderer) this.renderer.toneMappingExposure = isDay ? 1.15 : 1.05;
+        if (window.gameSettings) window.gameSettings.save({ dayMode: isDay });
+        if (window.sounds) window.sounds.playInteract();
+        this.showBannerNotification(isDay ? '🌅 DAY CYCLE: Metropolis sunrise — sunlight restored.' : '🌃 NIGHT CYCLE: Neon grid reactivated.', 'info');
+    }
+
     showBannerNotification(message, type = 'info') {
         const banner = document.getElementById('world-event-banner');
         if (!banner) return;
@@ -166,6 +189,8 @@ class CyberCTFGame {
                 this.toggleCodex();
             } else if (e.code === 'KeyG') {
                 this.toggleCertificate();
+            } else if (e.code === 'KeyN') {
+                this.toggleDayNight();
             }
         });
 

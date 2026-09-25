@@ -22,6 +22,7 @@ class CyberBunkerWorld {
         this.beacons = [];
         this.rainSystem = null;
         this.elapsed = 0;
+        this.isDay = false;
 
         // Build rich procedural texture palette for vibrant Cyberpunk Night aesthetic
         this.textures = this.initProceduralTextures();
@@ -881,11 +882,14 @@ class CyberBunkerWorld {
         ctx.beginPath(); ctx.arc(mx - 3, my + 10, 2, 0, Math.PI * 2); ctx.fill();
 
         this.skyTex = new THREE.CanvasTexture(this.skyCanvas);
+        this.skyTexNight = this.skyTex;
+        this.skyTexDay = this.createDaySkyTexture();
         this.skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: this.skyTex, side: THREE.BackSide, fog: false }));
         this.scene.add(this.skyMesh);
 
         // Moody 3D Night Clouds (unlit silhouettes that blend into the night sky)
         const cloudMat = new THREE.MeshBasicMaterial({ color: 0x1a2440 });
+        this.cloudMat = cloudMat;
         for (let i = 0; i < 22; i++) {
             const cloud = new THREE.Group();
             const puffs = 7 + Math.floor(Math.random() * 5);
@@ -901,6 +905,103 @@ class CyberBunkerWorld {
             this.scene.add(cloud);
             this.clouds.push(cloud);
         }
+    }
+
+    createDaySkyTexture() {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 512;
+        const ctx = c.getContext('2d');
+
+        const grad = ctx.createLinearGradient(0, 0, 0, 512);
+        grad.addColorStop(0.0, '#1d4ed8'); // Deep zenith blue
+        grad.addColorStop(0.4, '#3b82f6'); // Azure mid sky
+        grad.addColorStop(0.75, '#7dd3fc'); // Pale horizon blue
+        grad.addColorStop(1.0, '#dbeafe'); // Bright haze at horizon
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 512);
+
+        // Sun with soft halo
+        const sx = 60;
+        const sy = 120;
+        const halo = ctx.createRadialGradient(sx, sy, 10, sx, sy, 70);
+        halo.addColorStop(0, 'rgba(255, 251, 235, 0.95)');
+        halo.addColorStop(0.4, 'rgba(255, 225, 150, 0.35)');
+        halo.addColorStop(1, 'rgba(255, 225, 150, 0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 70, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fffdf5';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wispy daytime clouds
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        for (let i = 0; i < 14; i++) {
+            const cx = Math.random() * 256;
+            const cy = 60 + Math.random() * 200;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 18 + Math.random() * 22, 5 + Math.random() * 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        return new THREE.CanvasTexture(c);
+    }
+
+    // Day/Night cycle: swap sky, relight scene, dim window emissives & streetlights
+    setDayNight(isDay) {
+        this.isDay = isDay;
+
+        this.skyMesh.material.map = isDay ? this.skyTexDay : this.skyTexNight;
+        this.skyMesh.material.needsUpdate = true;
+
+        if (this.cloudMat) {
+            this.cloudMat.color.setHex(isDay ? 0xf5f7fa : 0x1a2440);
+        }
+
+        if (this.sunLight) {
+            this.sunLight.color.setHex(isDay ? 0xfff4d6 : 0x93c5fd);
+            this.sunLight.intensity = isDay ? 1.7 : 0.85;
+        }
+        if (this.hemiLight) {
+            this.hemiLight.color.setHex(isDay ? 0x93c5fd : 0x1e293b);
+            this.hemiLight.groundColor.setHex(isDay ? 0x64748b : 0x090d16);
+            this.hemiLight.intensity = isDay ? 0.85 : 0.55;
+        }
+        if (this.fillLight) {
+            this.fillLight.intensity = isDay ? 0.15 : 0.35;
+        }
+
+        if (this.scene.fog) {
+            this.scene.fog.color.setHex(isDay ? 0xaec6e4 : 0x060913);
+            this.scene.fog.near = isDay ? 500 : 300;
+            this.scene.fog.far = isDay ? 2800 : 2400;
+        }
+
+        // Window emissives: off in daylight, glowing at night
+        if (this.facadeMats) {
+            this.facadeMats.forEach(fm => {
+                fm.mat.emissiveIntensity = isDay ? 0.04 : fm.night;
+            });
+        }
+        if (this.streetLightMaterials) {
+            this.streetLightMaterials.forEach(m => {
+                m.emissiveIntensity = isDay ? 0.05 : 2.2;
+            });
+        }
+        if (this.streetPointLights) {
+            this.streetPointLights.forEach(l => {
+                l.intensity = isDay ? 0 : 1.2;
+            });
+        }
+    }
+
+    toggleDayNight() {
+        this.setDayNight(!this.isDay);
+        return this.isDay;
     }
 
     buildMountainBackdrop() {
@@ -1345,6 +1446,15 @@ class CyberBunkerWorld {
         applyBump(matWhite, this.textures.bumpWhite, 0.3);
         applyBump(matTerra, this.textures.bumpTerra, 0.45);
         applyBump(matRetail, this.textures.bumpRetail, 0.3);
+
+        // Track facade materials + their night emissive levels for the day/night cycle
+        this.facadeMats = [
+            { mat: matBlue, night: 0.9 },
+            { mat: matTeal, night: 0.95 },
+            { mat: matWhite, night: 0.85 },
+            { mat: matTerra, night: 0.9 },
+            { mat: matRetail, night: 0.75 }
+        ];
 
         // =========================================================================
         // 1. LANDMARK SKYSCRAPERS (FINANCIAL DISTRICT)
