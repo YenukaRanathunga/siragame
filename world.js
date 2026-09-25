@@ -88,6 +88,7 @@ class CyberBunkerWorld {
 
     initProceduralTextures() {
         const emissive = this.createEmissiveMaps();
+        const bumps = this.createBumpMaps();
         return {
             lushGrass: this.createLushGrassTexture(),
             darkAsphaltRoad: this.createDarkAsphaltRoadTexture(),
@@ -105,7 +106,12 @@ class CyberBunkerWorld {
             emissiveTeal: emissive.teal,
             emissiveWhite: emissive.white,
             emissiveTerra: emissive.terra,
-            emissiveRetail: emissive.retail
+            emissiveRetail: emissive.retail,
+            bumpBlue: bumps.blue,
+            bumpTeal: bumps.teal,
+            bumpWhite: bumps.white,
+            bumpTerra: bumps.terra,
+            bumpRetail: bumps.retail
         };
     }
 
@@ -609,6 +615,108 @@ class CyberBunkerWorld {
         return tex;
     }
 
+    // 16. Grayscale Bump Height Maps (window recesses & mullion relief for PBR depth)
+    createBumpMaps() {
+        const make = (w, h, drawFn) => {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(0, 0, w, h);
+            drawFn(ctx);
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        };
+
+        return {
+            blue: make(512, 512, (ctx) => {
+                const cols = 8, rows = 14;
+                const cellW = 512 / cols, cellH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    ctx.fillStyle = '#c8c8c8';
+                    ctx.fillRect(0, r * cellH, 512, 2.5);
+                    for (let col = 0; col < cols; col++) {
+                        const wx = col * cellW + 3;
+                        const wy = r * cellH + 4;
+                        ctx.fillStyle = '#3c3c3c';
+                        ctx.fillRect(wx, wy, cellW - 6, cellH - 6);
+                        ctx.strokeStyle = '#dcdcdc';
+                        ctx.lineWidth = 1.4;
+                        ctx.strokeRect(wx, wy, cellW - 6, cellH - 6);
+                    }
+                }
+            }),
+            teal: make(512, 512, (ctx) => {
+                const cols = 6, rows = 12;
+                const cellW = 512 / cols, cellH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    ctx.fillStyle = '#b0b0b0';
+                    ctx.fillRect(0, r * cellH, 512, 3);
+                    for (let col = 0; col < cols; col++) {
+                        const wx = col * cellW + 4;
+                        const wy = r * cellH + 5;
+                        ctx.fillStyle = '#464646';
+                        ctx.fillRect(wx, wy, cellW - 8, cellH - 8);
+                        ctx.strokeStyle = '#c8c8c8';
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeRect(wx, wy, cellW - 8, cellH - 8);
+                    }
+                }
+            }),
+            white: make(512, 512, (ctx) => {
+                const rows = 10;
+                const rowH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    const ry = r * rowH;
+                    ctx.fillStyle = '#404040';
+                    ctx.fillRect(16, ry + 12, 480, rowH - 24);
+                    for (let x = 20; x < 490; x += 36) {
+                        ctx.fillStyle = '#a0a0a0';
+                        ctx.fillRect(x, ry + 12, 2, rowH - 24);
+                    }
+                    ctx.fillStyle = '#d0d0d0';
+                    ctx.fillRect(14, ry + rowH - 8, 484, 6);
+                }
+            }),
+            terra: make(512, 512, (ctx) => {
+                ctx.fillStyle = '#9a9a9a';
+                for (let y = 0; y < 512; y += 8) {
+                    ctx.fillRect(0, y, 512, 1.5);
+                }
+                const cols = 5, rows = 8;
+                const cellW = 512 / cols, cellH = 512 / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let col = 0; col < cols; col++) {
+                        const wx = col * cellW + 18;
+                        const wy = r * cellH + 16;
+                        const ww = cellW - 36;
+                        const wh = cellH - 30;
+                        ctx.fillStyle = '#dcdcdc';
+                        ctx.fillRect(wx - 3, wy + wh, ww + 6, 4);
+                        ctx.fillRect(wx - 2, wy - 3, ww + 4, 3);
+                        ctx.fillStyle = '#3a3a3a';
+                        ctx.fillRect(wx, wy, ww, wh);
+                    }
+                }
+            }),
+            retail: make(512, 256, (ctx) => {
+                for (let i = 0; i < 4; i++) {
+                    const sx = i * 128;
+                    ctx.fillStyle = '#b8b8b8';
+                    ctx.fillRect(sx + 6, 8, 116, 22);
+                    ctx.fillStyle = '#c4c4c4';
+                    ctx.fillRect(sx + 4, 34, 120, 46);
+                    ctx.fillStyle = '#3c3c3c';
+                    ctx.fillRect(sx + 8, 88, 112, 155);
+                    ctx.fillStyle = '#282828';
+                    ctx.fillRect(sx + 48, 115, 32, 128);
+                }
+            })
+        };
+    }
     // 15. Emissive Night Maps (black facades with glowing lit windows for bloom)
     createEmissiveMaps() {
         const make = (w, h, drawFn) => {
@@ -725,7 +833,13 @@ class CyberBunkerWorld {
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 256, 512);
 
-        // Hundreds of twinkling stars
+        // Distant city light-pollution glow hugging the horizon
+        const glowBand = ctx.createLinearGradient(0, 380, 0, 512);
+        glowBand.addColorStop(0, 'rgba(120, 60, 180, 0)');
+        glowBand.addColorStop(0.55, 'rgba(255, 90, 160, 0.16)');
+        glowBand.addColorStop(1, 'rgba(255, 150, 80, 0.30)');
+        ctx.fillStyle = glowBand;
+        ctx.fillRect(0, 380, 256, 132);
         ctx.fillStyle = '#ffffff';
         for (let i = 0; i < 450; i++) {
             const sx = Math.random() * 256;
@@ -770,8 +884,8 @@ class CyberBunkerWorld {
         this.skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: this.skyTex, side: THREE.BackSide, fog: false }));
         this.scene.add(this.skyMesh);
 
-        // Moody 3D Night Clouds
-        const cloudMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95, flatShading: true });
+        // Moody 3D Night Clouds (unlit silhouettes that blend into the night sky)
+        const cloudMat = new THREE.MeshBasicMaterial({ color: 0x1a2440 });
         for (let i = 0; i < 22; i++) {
             const cloud = new THREE.Group();
             const puffs = 7 + Math.floor(Math.random() * 5);
@@ -1219,7 +1333,18 @@ class CyberBunkerWorld {
         applyEmissive(matTeal, this.textures.emissiveTeal, 0.95);
         applyEmissive(matWhite, this.textures.emissiveWhite, 0.85);
         applyEmissive(matTerra, this.textures.emissiveTerra, 0.9);
-        applyEmissive(matRetail, this.textures.emissiveRetail, 1.0);
+        applyEmissive(matRetail, this.textures.emissiveRetail, 0.75);
+
+        // Bump relief for realistic facade depth
+        const applyBump = (mat, tex, scale) => {
+            mat.bumpMap = tex;
+            mat.bumpScale = scale;
+        };
+        applyBump(matBlue, this.textures.bumpBlue, 0.35);
+        applyBump(matTeal, this.textures.bumpTeal, 0.35);
+        applyBump(matWhite, this.textures.bumpWhite, 0.3);
+        applyBump(matTerra, this.textures.bumpTerra, 0.45);
+        applyBump(matRetail, this.textures.bumpRetail, 0.3);
 
         // =========================================================================
         // 1. LANDMARK SKYSCRAPERS (FINANCIAL DISTRICT)
@@ -1312,13 +1437,15 @@ class CyberBunkerWorld {
             }
         }
 
+        const parapetMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+
         allBuildings.forEach(b => {
             let facadeMat;
             if (b.type === 'blue') facadeMat = matBlue;
             else if (b.type === 'teal') facadeMat = matTeal;
             else if (b.type === 'white') facadeMat = matWhite;
             else if (b.type === 'terra') facadeMat = matTerra;
-            else facadeMat = matRetail;
+            else facadeMat = matWhite; // Retail towers: white apartments above the colorful storefront podium
 
             const bGroup = new THREE.Group();
             bGroup.position.set(b.x, 0, b.z);
@@ -1332,21 +1459,62 @@ class CyberBunkerWorld {
                 bGroup.add(podium);
             }
 
-            // Tower main body
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), facadeMat);
-            mesh.position.y = b.h / 2;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            bGroup.add(mesh);
+            // Tower main body — stepped setback tiers for realistic skyscraper silhouettes
+            let topW = b.w;
+            let topD = b.d;
+            let baseTierH = b.h;
+            let tierSpecs = null;
+            if (b.h >= 90) {
+                tierSpecs = [
+                    { scale: 1.0, y0: 0, y1: Math.round(b.h * 0.45) },
+                    { scale: 0.8, y0: Math.round(b.h * 0.45), y1: Math.round(b.h * 0.75) },
+                    { scale: 0.6, y0: Math.round(b.h * 0.75), y1: b.h }
+                ];
+            } else if (b.h >= 60) {
+                tierSpecs = [
+                    { scale: 1.0, y0: 0, y1: Math.round(b.h * 0.55) },
+                    { scale: 0.7, y0: Math.round(b.h * 0.55), y1: b.h }
+                ];
+            }
 
-            // Roof & Parapet
-            const roof = new THREE.Mesh(new THREE.BoxGeometry(b.w, 0.6, b.d), matRoof);
+            if (tierSpecs) {
+                tierSpecs.forEach(tier => {
+                    const tw = b.w * tier.scale;
+                    const td = b.d * tier.scale;
+                    const th = tier.y1 - tier.y0;
+                    const tierMesh = new THREE.Mesh(new THREE.BoxGeometry(tw, th, td), facadeMat);
+                    tierMesh.position.y = tier.y0 + th / 2;
+                    tierMesh.castShadow = true;
+                    tierMesh.receiveShadow = true;
+                    bGroup.add(tierMesh);
+
+                    if (tier.y1 < b.h) {
+                        const band = new THREE.Mesh(new THREE.BoxGeometry(tw + 0.6, 1.0, td + 0.6), parapetMat);
+                        band.position.y = tier.y1 + 0.4;
+                        band.castShadow = true;
+                        bGroup.add(band);
+                    }
+                });
+                const topSpec = tierSpecs[tierSpecs.length - 1];
+                topW = b.w * topSpec.scale;
+                topD = b.d * topSpec.scale;
+                baseTierH = tierSpecs[0].y1;
+            } else {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), facadeMat);
+                mesh.position.y = b.h / 2;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                bGroup.add(mesh);
+            }
+
+            // Roof & Parapet (sized to the topmost tier)
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(topW, 0.6, topD), matRoof);
             roof.position.y = b.h + 0.3;
             bGroup.add(roof);
 
             const parapet = new THREE.Mesh(
-                new THREE.BoxGeometry(b.w + 0.8, 1.4, b.d + 0.8),
-                new THREE.MeshStandardMaterial({ color: 0x334155 })
+                new THREE.BoxGeometry(topW + 0.8, 1.4, topD + 0.8),
+                parapetMat
             );
             parapet.position.y = b.h + 0.7;
             parapet.castShadow = true;
@@ -1355,17 +1523,17 @@ class CyberBunkerWorld {
             // Rooftop HVAC Units, Satellite Dishes, and Water Tanks
             if (b.h > 48) {
                 const ac = new THREE.Mesh(
-                    new THREE.BoxGeometry(b.w * 0.35, 2.8, b.d * 0.3),
+                    new THREE.BoxGeometry(topW * 0.35, 2.8, topD * 0.3),
                     new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.25 })
                 );
-                ac.position.set(b.w * 0.15, b.h + 1.9, -b.d * 0.15);
+                ac.position.set(topW * 0.15, b.h + 1.9, -topD * 0.15);
                 bGroup.add(ac);
 
                 const tank = new THREE.Mesh(
                     new THREE.CylinderGeometry(2.4, 2.4, 4.6, 12),
                     new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.85 })
                 );
-                tank.position.set(-b.w * 0.2, b.h + 3.6, b.d * 0.2);
+                tank.position.set(-topW * 0.2, b.h + 3.6, topD * 0.2);
                 bGroup.add(tank);
             }
 
@@ -1383,15 +1551,15 @@ class CyberBunkerWorld {
                 bGroup.add(bb);
             }
 
-            // Neon corner light strips on tall towers
+            // Neon corner light strips on tall towers (base tier height)
             if (b.h >= 70) {
                 const neonCyan = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
                 const neonPink = new THREE.MeshBasicMaterial({ color: 0xff2d95 });
-                const stripGeo = new THREE.BoxGeometry(0.5, b.h, 0.5);
+                const stripGeo = new THREE.BoxGeometry(0.5, baseTierH, 0.5);
                 const stripA = new THREE.Mesh(stripGeo, neonCyan);
-                stripA.position.set(-b.w / 2 - 0.3, b.h / 2, -b.d / 2 - 0.3);
+                stripA.position.set(-b.w / 2 - 0.3, baseTierH / 2, -b.d / 2 - 0.3);
                 const stripB = new THREE.Mesh(stripGeo, neonPink);
-                stripB.position.set(b.w / 2 + 0.3, b.h / 2, b.d / 2 + 0.3);
+                stripB.position.set(b.w / 2 + 0.3, baseTierH / 2, b.d / 2 + 0.3);
                 bGroup.add(stripA);
                 bGroup.add(stripB);
             }
@@ -1724,6 +1892,53 @@ class CyberBunkerWorld {
                 this.addBoxCollider(bx > 0 ? bx - 1.2 : bx + 1.2, bz + 8, 0.6, 0.6);
             });
         }
+
+        // Bus Stop Shelters with Glowing Ad Posters
+        const busFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
+        const busGlassMat = new THREE.MeshStandardMaterial({
+            color: 0x9fd8ff, metalness: 0.9, roughness: 0.08,
+            transparent: true, opacity: 0.32
+        });
+        const busAdMat = new THREE.MeshStandardMaterial({ map: this.textures.billboardAds, emissive: 0xffffff, emissiveMap: this.textures.billboardAds, emissiveIntensity: 0.55 });
+
+        [-20.5, 20.5].forEach(sx => {
+            [-200, -80, 80, 200].forEach(sz => {
+                const stop = new THREE.Group();
+                stop.position.set(sx, 0, sz);
+                stop.rotation.y = (sx < 0) ? Math.PI / 2 : -Math.PI / 2;
+
+                // Posts
+                [-1.5, 1.5].forEach(px => {
+                    const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.12), busFrameMat);
+                    post.position.set(px, 1.3, 0);
+                    stop.add(post);
+                });
+
+                // Glass back wall
+                const glass = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.9, 0.06), busGlassMat);
+                glass.position.set(0, 1.15, 0.12);
+                stop.add(glass);
+
+                // Roof slab
+                const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.14, 1.3), busFrameMat);
+                roofSlab.position.set(0, 2.62, -0.4);
+                roofSlab.castShadow = true;
+                stop.add(roofSlab);
+
+                // Bench
+                const stopBench = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.5), benchWoodMat);
+                stopBench.position.set(0, 0.5, -0.15);
+                stop.add(stopBench);
+
+                // Illuminated ad poster on the side
+                const ad = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 1.0), busAdMat);
+                ad.position.set(1.72, 1.35, -0.4);
+                stop.add(ad);
+
+                this.scene.add(stop);
+                this.addBoxCollider(sx, sz, 1.6, 3.6);
+            });
+        });
     }
 
     buildMetropolisVehicles() {
